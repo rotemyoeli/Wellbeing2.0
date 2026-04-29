@@ -8,9 +8,6 @@ Adds columns to the alerts table to support the closed-loop feedback
 flow from the design pack:
     - team_update_id: FK linking alert closure to a published team update
     - closure_published: boolean flag for quick filtering unpublished closures
-
-These support screens C2-C6 (alert ack with publish), C7 (team update
-composer), and C8 (unpublished closures review).
 """
 
 from alembic import op
@@ -24,15 +21,23 @@ depends_on = None
 
 
 def _column_exists(table, column):
-    """Check if a column already exists (handles db.create_all() having run first)."""
+    """Check if a column already exists. Works on both SQLite and PostgreSQL."""
     bind = op.get_bind()
-    result = bind.execute(sa.text(f"PRAGMA table_info({table})"))
-    columns = [row[1] for row in result]
+    dialect = bind.dialect.name
+    if dialect == "sqlite":
+        result = bind.execute(sa.text(f"PRAGMA table_info({table})"))
+        columns = [row[1] for row in result]
+    else:
+        # PostgreSQL: query information_schema
+        result = bind.execute(sa.text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = :table"
+        ), {"table": table})
+        columns = [row[0] for row in result]
     return column in columns
 
 
 def upgrade():
-    # Idempotent: skip if columns already exist (e.g., from db.create_all())
     if not _column_exists("alerts", "team_update_id"):
         op.add_column(
             "alerts",
@@ -51,11 +56,10 @@ def upgrade():
                 "closure_published",
                 sa.Boolean(),
                 nullable=False,
-                server_default=sa.text("0"),
+                server_default=sa.text("false"),
             ),
         )
 
-    # Index — use try/except since index may already exist
     try:
         op.create_index(
             "ix_alerts_closure_published",
