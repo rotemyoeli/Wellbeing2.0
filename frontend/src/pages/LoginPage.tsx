@@ -1,152 +1,134 @@
 /**
- * LoginPage — two-step OTP login.
- *
- * Step 1: enter email → backend issues OTP → in dev, code prints to backend stdout
- * Step 2: enter the 6-digit code → backend returns JWT pair → AuthContext takes over
- *
- * Spec v2 §11 design directives:
- *   - Single-thumb, one-screen, large touch targets, font >=16px
- *   - Plain-language consent reminder visible (just below the form)
- *   - No legal jargon
+ * Auth screens: A1 (request OTP), A2 (verify OTP).
  */
-
 import { useState } from 'react'
-import { api } from '../lib/api'
+import WBBrand from '../components/ui/WBBrand'
+import WBButton from '../components/ui/WBButton'
+import WBCard from '../components/ui/WBCard'
+import WBInput from '../components/ui/WBInput'
 import { useAuth } from '../contexts/AuthContext'
-
-type Step = 'request' | 'verify'
+import { api } from '../lib/api'
+import { t } from '../lib/i18n'
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const [step, setStep] = useState<Step>('request')
-  const [contact, setContact] = useState('')
+  const [step, setStep] = useState<'request' | 'verify'>('request')
+  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
 
-  async function handleRequestOtp(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    if (!contact.trim()) {
-      setError('Please enter your email address.')
+  const handleRequestOtp = async () => {
+    if (!email.includes('@')) {
+      setError(t('a1_errEmail'))
       return
     }
-    setSubmitting(true)
+    setLoading(true)
+    setError('')
     try {
-      await api.requestOtp(contact.trim(), 'email')
+      await api.requestOtp(email)
       setStep('verify')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send code.')
+    } catch (e) {
+      setError(e instanceof Error && e.message.includes('429') ? t('a1_errRate') : t('a1_errNet'))
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    if (code.length !== 6) {
-      setError('Code must be 6 digits.')
-      return
-    }
-    setSubmitting(true)
+  const handleVerifyOtp = async () => {
+    setLoading(true)
+    setError('')
     try {
-      const res = await api.verifyOtp(contact.trim(), code)
+      const res = await api.verifyOtp(email, code)
       login(res.accessToken, res.refreshToken, res.user)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not verify code.')
+    } catch {
+      setError(t('a2_errInvalid'))
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pt-10 pb-8">
-      <h1 className="mb-1 text-2xl font-semibold text-ink-900">Wellbeing</h1>
-      <p className="mb-8 text-sm text-ink-500">
-        Sign in with your work email. We'll send you a one-time code.
-      </p>
+    <div className="min-h-screen bg-paper flex flex-col px-6 py-8">
+      <WBBrand size="lg" />
 
-      {step === 'request' && (
-        <form onSubmit={handleRequestOtp} className="flex flex-col gap-3">
-          <label htmlFor="contact" className="text-sm font-medium text-ink-700">
-            Email
-          </label>
-          <input
-            id="contact"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="you@hospital.org.il"
-            required
-            className="w-full rounded-2xl border border-ink-300 px-4 py-3 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-2 w-full rounded-2xl bg-ink-900 px-6 py-4 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 no-tap-highlight"
+      {step === 'request' ? (
+        <div className="flex flex-col flex-1 mt-10">
+          <h1 className="text-h1 font-bold text-ink-900">{t('a1_title')}</h1>
+          <p className="text-body text-ink-500 mt-2">{t('a1_subtitle')}</p>
+
+          <form
+            className="mt-8 flex flex-col gap-4"
+            onSubmit={(e) => { e.preventDefault(); handleRequestOtp() }}
           >
-            {submitting ? 'Sending…' : 'Send code'}
-          </button>
-        </form>
-      )}
+            <WBInput
+              label={t('a1_emailLabel')}
+              type="email"
+              inputMode="email"
+              placeholder={t('a1_emailPlaceholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={error || undefined}
+              dir="ltr"
+            />
+            <WBButton kind="primary" full disabled={loading || !email} type="submit">
+              {loading ? '...' : t('a1_send')}
+            </WBButton>
+          </form>
 
-      {step === 'verify' && (
-        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-          <p className="text-sm text-ink-700">
-            We sent a 6-digit code to <span className="font-medium">{contact}</span>.
+          <div className="flex-1" />
+
+          <WBCard sunken className="mt-8">
+            <p className="text-caption text-ink-500 leading-relaxed">
+              {t('a1_privacyReminder')}
+            </p>
+          </WBCard>
+        </div>
+      ) : (
+        <div className="flex flex-col flex-1 mt-10">
+          <h1 className="text-h1 font-bold text-ink-900">{t('a1_title')}</h1>
+          <p className="text-body text-ink-500 mt-2">
+            {t('a2_subtitle')} <span className="font-medium text-ink-700" dir="ltr">{email}</span>
           </p>
-          <label htmlFor="code" className="text-sm font-medium text-ink-700">
-            Code
-          </label>
-          <input
-            id="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
-            required
-            className="w-full rounded-2xl border border-ink-300 px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-          <button
-            type="submit"
-            disabled={submitting || code.length !== 6}
-            className="mt-2 w-full rounded-2xl bg-ink-900 px-6 py-4 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 no-tap-highlight"
+
+          <form
+            className="mt-8 flex flex-col gap-4"
+            onSubmit={(e) => { e.preventDefault(); handleVerifyOtp() }}
           >
-            {submitting ? 'Verifying…' : 'Sign in'}
-          </button>
+            <WBInput
+              label={t('a2_codeLabel')}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              mono
+              placeholder="000000"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              error={error || undefined}
+              dir="ltr"
+            />
+            <WBButton kind="primary" full disabled={loading || code.length < 6} type="submit">
+              {loading ? t('a2_submitting') : t('a2_signIn')}
+            </WBButton>
+          </form>
+
           <button
             type="button"
-            onClick={() => {
-              setStep('request')
-              setCode('')
-              setError(null)
-            }}
-            className="text-sm text-ink-500 underline"
+            onClick={() => { setStep('request'); setCode(''); setError('') }}
+            className="text-caption text-accent-700 mt-4 self-start"
           >
-            Use a different email
+            {t('a2_useDifferent')}
           </button>
-        </form>
-      )}
 
-      {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+          <div className="flex-1" />
 
-      {/* Plain-language privacy reminder */}
-      <p className="mt-10 text-xs leading-relaxed text-ink-500">
-        Your wellbeing reports are not used for HR, pay, or promotion
-        decisions. You can choose to report anonymously — when you do, your
-        identity is hashed before submission and cannot be reversed.
-      </p>
+          <WBCard sunken className="mt-8">
+            <p className="text-caption text-ink-500 leading-relaxed">
+              {t('a1_privacyReminder')}
+            </p>
+          </WBCard>
+        </div>
+      )}
     </div>
   )
 }

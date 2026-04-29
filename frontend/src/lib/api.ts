@@ -1,13 +1,8 @@
 /**
- * API client.
- *
- * - Vite proxies /api/* to the Flask backend during dev (vite.config.ts).
- * - Access token (when present) is attached to every request as Bearer.
- * - DEV_MODE on the backend doesn't need a token; the client still works
- *   with no token set.
+ * API client — all backend communication goes through here.
  */
 
-import type { Alert, AlertStatus, DashboardSummary, User } from '../types'
+import type { Alert, AlertStatus, ConsentStatus, DashboardSummary, TeamUpdate, User } from '../types'
 
 export interface HealthResponse {
   status: string
@@ -16,11 +11,7 @@ export interface HealthResponse {
 }
 
 export interface ApiError {
-  error: {
-    code: string
-    message: string
-    details?: unknown
-  }
+  error: { code: string; message: string; details?: unknown }
 }
 
 export interface SubmitCheckInPayload {
@@ -56,7 +47,6 @@ export interface VerifyOtpResponse {
   user: User
 }
 
-
 class WellbeingApiClient {
   private baseUrl = '/api/v1'
   private accessToken: string | null = null
@@ -66,13 +56,8 @@ class WellbeingApiClient {
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
-    const h: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...extra,
-    }
-    if (this.accessToken) {
-      h.Authorization = `Bearer ${this.accessToken}`
-    }
+    const h: Record<string, string> = { 'Content-Type': 'application/json', ...extra }
+    if (this.accessToken) h.Authorization = `Bearer ${this.accessToken}`
     return h
   }
 
@@ -86,127 +71,170 @@ class WellbeingApiClient {
   }
 
   // ------------- Health ---------------------------------------------------
-
   async health(): Promise<HealthResponse> {
-    const response = await fetch(`${this.baseUrl}/health`)
-    if (!response.ok) {
-      throw new Error(`Health check failed: ${response.status}`)
-    }
-    return response.json()
+    const r = await fetch(`${this.baseUrl}/health`)
+    if (!r.ok) throw new Error(`Health check failed: ${r.status}`)
+    return r.json()
   }
 
   // ------------- Auth ----------------------------------------------------
-
-  /** Request an OTP. Always returns success-shape (no leakage). */
   async requestOtp(contact: string, contactType: 'email' | 'phone' = 'email'): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/auth/request-otp`, {
-      method: 'POST',
-      headers: this.headers(),
+    const r = await fetch(`${this.baseUrl}/auth/request-otp`, {
+      method: 'POST', headers: this.headers(),
       body: JSON.stringify({ contact, contactType }),
     })
-    if (response.status === 429) {
-      throw new Error(await this.parseError(response))
-    }
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
+    if (!r.ok) throw new Error(await this.parseError(r))
   }
 
-  /** Verify an OTP and receive a JWT pair. */
   async verifyOtp(contact: string, code: string): Promise<VerifyOtpResponse> {
-    const response = await fetch(`${this.baseUrl}/auth/verify-otp`, {
-      method: 'POST',
-      headers: this.headers(),
+    const r = await fetch(`${this.baseUrl}/auth/verify-otp`, {
+      method: 'POST', headers: this.headers(),
       body: JSON.stringify({ contact, code }),
     })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
   }
 
-  /** Server-side logout. Best-effort. */
   async logout(): Promise<void> {
     if (!this.accessToken) return
-    await fetch(`${this.baseUrl}/auth/logout`, {
-      method: 'POST',
-      headers: this.headers(),
-    })
+    await fetch(`${this.baseUrl}/auth/logout`, { method: 'POST', headers: this.headers() })
   }
 
-  /** Get the current user profile. */
   async me(): Promise<{ user: User }> {
-    const response = await fetch(`${this.baseUrl}/auth/me`, {
-      headers: this.headers(),
+    const r = await fetch(`${this.baseUrl}/auth/me`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  // ------------- Users ---------------------------------------------------
+  async updateProfile(data: { displayName?: string; role?: string; departmentId?: string | null }): Promise<{ user: User }> {
+    const r = await fetch(`${this.baseUrl}/users/me`, {
+      method: 'PATCH', headers: this.headers(),
+      body: JSON.stringify(data),
     })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  // ------------- Consent -------------------------------------------------
+  async consentStatus(): Promise<ConsentStatus> {
+    const r = await fetch(`${this.baseUrl}/consent/status`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async acceptConsent(): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/consent/accept`, {
+      method: 'POST', headers: this.headers(),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
   }
 
   // ------------- Check-ins -----------------------------------------------
-
   async submitCheckIn(payload: SubmitCheckInPayload): Promise<SubmitCheckInResponse> {
-    const response = await fetch(`${this.baseUrl}/checkins/`, {
-      method: 'POST',
-      headers: this.headers(),
+    const r = await fetch(`${this.baseUrl}/checkins/`, {
+      method: 'POST', headers: this.headers(),
       body: JSON.stringify(payload),
     })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async updateFollowUp(checkInId: string, data: { supportQ?: boolean | null; workloadQ?: boolean | null }): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/checkins/${checkInId}/follow-up`, {
+      method: 'PATCH', headers: this.headers(),
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+  }
+
+  async updateComment(checkInId: string, comment: string | null): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/checkins/${checkInId}/comment`, {
+      method: 'PATCH', headers: this.headers(),
+      body: JSON.stringify({ comment }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
   }
 
   async listMyCheckIns(): Promise<{ items: CheckInListItem[]; total: number }> {
-    const response = await fetch(`${this.baseUrl}/checkins/me`, {
-      headers: this.headers(),
-    })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    const r = await fetch(`${this.baseUrl}/checkins/me`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
   }
 
-  // ------------- Dashboard ----------------------------------------------
-
+  // ------------- Dashboard -----------------------------------------------
   async dashboardSummary(periodDays = 7): Promise<DashboardSummary> {
-    const response = await fetch(
-      `${this.baseUrl}/dashboard/summary?period=${periodDays}`,
-      { headers: this.headers() },
-    )
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    const r = await fetch(`${this.baseUrl}/dashboard/summary?period=${periodDays}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
   }
 
-  // ------------- Alerts -------------------------------------------------
-
+  // ------------- Alerts --------------------------------------------------
   async listAlerts(status?: AlertStatus): Promise<{ items: Alert[]; total: number }> {
-    const url = status
-      ? `${this.baseUrl}/alerts/?status=${status}`
-      : `${this.baseUrl}/alerts/`
-    const response = await fetch(url, { headers: this.headers() })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    const url = status ? `${this.baseUrl}/alerts/?status=${status}` : `${this.baseUrl}/alerts/`
+    const r = await fetch(url, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
   }
 
-  async ackAlert(alertId: string, step: 1 | 2 | 3, note?: string): Promise<Alert> {
-    const body: { step: number; note?: string } = { step }
+  async ackAlert(alertId: string, step: 1 | 2 | 3, note?: string, publishToTeam?: boolean, departmentId?: string): Promise<Alert> {
+    const body: Record<string, unknown> = { step }
     if (note !== undefined) body.note = note
-    const response = await fetch(`${this.baseUrl}/alerts/${alertId}/ack`, {
-      method: 'POST',
-      headers: this.headers(),
+    if (publishToTeam !== undefined) body.publishToTeam = publishToTeam
+    if (departmentId !== undefined) body.departmentId = departmentId
+    const r = await fetch(`${this.baseUrl}/alerts/${alertId}/ack`, {
+      method: 'POST', headers: this.headers(),
       body: JSON.stringify(body),
     })
-    if (!response.ok) {
-      throw new Error(await this.parseError(response))
-    }
-    return response.json()
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async unpublishedClosures(days = 14): Promise<{ unpublished: Alert[]; published: Alert[]; days: number }> {
+    const r = await fetch(`${this.baseUrl}/alerts/unpublished-closures?days=${days}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async publishClosure(alertId: string, departmentId: string, content?: string): Promise<Alert> {
+    const r = await fetch(`${this.baseUrl}/alerts/${alertId}/publish`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ departmentId, content }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  // ------------- Team Updates --------------------------------------------
+  async listTeamUpdates(departmentId: string, limit = 20): Promise<{ items: TeamUpdate[]; total: number }> {
+    const r = await fetch(`${this.baseUrl}/team-updates/?departmentId=${departmentId}&limit=${limit}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async createTeamUpdate(departmentId: string, content: string, publish = true): Promise<TeamUpdate> {
+    const r = await fetch(`${this.baseUrl}/team-updates/`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ departmentId, content, publish }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async editTeamUpdate(updateId: string, content: string): Promise<TeamUpdate> {
+    const r = await fetch(`${this.baseUrl}/team-updates/${updateId}`, {
+      method: 'PUT', headers: this.headers(),
+      body: JSON.stringify({ content }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async deleteTeamUpdate(updateId: string): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/team-updates/${updateId}`, {
+      method: 'DELETE', headers: this.headers(),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
   }
 }
 

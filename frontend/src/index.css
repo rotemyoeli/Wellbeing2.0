@@ -1,28 +1,130 @@
+/* ===== Font import ===== */
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ===== Design tokens from design pack (tokens.jsx) ===== */
+:root {
+  --wb-paper: #F8F2E8;
+  --wb-surface: #FFFCF6;
+  --wb-sunken: #EDE5D5;
+  --wb-line: #E2D9C7;
+  --wb-line-bold: #CDC2AE;
+
+  --wb-ink-900: #2A1D3E;
+  --wb-ink-700: #3D2E55;
+  --wb-ink-500: #6B5C7A;
+  --wb-ink-400: #8B7E9A;
+  --wb-ink-300: #B0A6BC;
+  --wb-ink-200: #D0C9D8;
+
+  --wb-accent-900: #3A1F66;
+  --wb-accent-700: #522F8A;
+  --wb-accent-500: #7B5BAD;
+  --wb-accent-300: #B49FCE;
+  --wb-accent-100: #E8DFF2;
+  --wb-accent-50: #F3EEF8;
+
+  --wb-teal-700: #2A8579;
+  --wb-teal-500: #3DB6A8;
+  --wb-teal-300: #7DD4C8;
+  --wb-teal-100: #D6F0EC;
+
+  --wb-alert-low-bg: #F5E5DA;
+  --wb-alert-low-fg: #8B4A2A;
+  --wb-alert-low-border: #E2C4AB;
+  --wb-alert-high-bg: #E5EBDA;
+  --wb-alert-high-fg: #4A6B3A;
+  --wb-alert-high-border: #C4D4AB;
+
+  --wb-status-open-bg: #FFF3E0;
+  --wb-status-open-fg: #E65100;
+  --wb-status-open-border: #FFB74D;
+  --wb-status-seen-bg: #E8DFF2;
+  --wb-status-seen-fg: #522F8A;
+  --wb-status-seen-border: #B49FCE;
+  --wb-status-contacted-bg: #D6F0EC;
+  --wb-status-contacted-fg: #2A8579;
+  --wb-status-contacted-border: #7DD4C8;
+  --wb-status-closed-bg: #EDE5D5;
+  --wb-status-closed-fg: #6B5C7A;
+  --wb-status-closed-border: #CDC2AE;
+
+  --wb-identified-bg: #E8DFF2;
+  --wb-identified-fg: #522F8A;
+  --wb-anonymous-bg: #2A1D3E;
+  --wb-anonymous-fg: #F3EEF8;
+
+  --wb-shadow-sm: 0 1px 2px rgba(42,29,62,0.06);
+  --wb-shadow-md: 0 2px 8px rgba(42,29,62,0.08);
+  --wb-shadow-lg: 0 4px 16px rgba(42,29,62,0.10);
+  --wb-shadow-focus: 0 0 0 3px rgba(82,47,138,0.18);
+}
+
+[data-theme="dark"] {
+  --wb-paper: #1B1227;
+  --wb-surface: #251A36;
+  --wb-sunken: #15101F;
+  --wb-line: #3A2D4F;
+  --wb-line-bold: #4D3F66;
+  --wb-ink-900: #F2EAE0;
+  --wb-ink-700: #D5C9D9;
+  --wb-ink-500: #A097B0;
+  --wb-ink-400: #847A98;
+  --wb-ink-300: #5C5270;
+  --wb-ink-200: #3E3554;
+  --wb-accent-700: #B49FCE;
+  --wb-accent-100: #2E2240;
+  --wb-accent-50: #221838;
+  --wb-teal-500: #5FC8BC;
+  --wb-teal-100: #1E3D38;
+  --wb-alert-low-bg: #3D2418;
+  --wb-alert-low-fg: #E8B894;
+  --wb-alert-high-bg: #1F2D14;
+  --wb-alert-high-fg: #BCD49E;
+  --wb-status-open-bg: #3D2A10;
+  --wb-status-open-fg: #FFB74D;
+  --wb-status-seen-bg: #2E2240;
+  --wb-status-seen-fg: #B49FCE;
+  --wb-status-contacted-bg: #1E3D38;
+  --wb-status-contacted-fg: #7DD4C8;
+  --wb-status-closed-bg: #15101F;
+  --wb-status-closed-fg: #A097B0;
+  --wb-shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --wb-shadow-md: 0 2px 8px rgba(0,0,0,0.25);
+  --wb-shadow-lg: 0 4px 16px rgba(0,0,0,0.3);
+  --wb-shadow-focus: 0 0 0 3px rgba(180,159,206,0.25);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Spec v2 §11 — single-thumb mobile design */
 @layer base {
   html {
-    /* Prevent iOS rubber-band scroll on the check-in screen */
     overscroll-behavior-y: contain;
+    -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-white text-ink-900 antialiased;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    /* iOS safe areas */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    background-color: var(--wb-paper);
+    color: var(--wb-ink-900);
+    font-family: 'Heebo', 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* Touch targets >=44px (Spec v2 §11) */
-  button {
-    @apply min-h-[44px] min-w-[44px];
+  button, [role="button"], input[type="submit"], a {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
 @layer utilities {
   .no-tap-highlight {
     -webkit-tap-highlight-color: transparent;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
   }
 }
