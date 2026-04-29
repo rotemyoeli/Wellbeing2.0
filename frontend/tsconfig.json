@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "types": ["vite/client"],
 
     /* Strict mode (matches Spec v2 NFR/code-quality) */
     "strict": true,
