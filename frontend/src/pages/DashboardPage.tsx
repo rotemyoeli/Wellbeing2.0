@@ -32,8 +32,9 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
   const refresh = useCallback(async () => {
     setError(null)
     try {
+      // Fix #7: pass department scope when available
       const [s, a] = await Promise.all([
-        api.dashboardSummary(period),
+        api.dashboardSummary(period, user?.department_id || undefined),
         api.listAlerts('open'),
       ])
       setSummary(s)

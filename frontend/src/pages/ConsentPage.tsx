@@ -1,6 +1,9 @@
 /**
  * A3 — Amendment 13 consent screen.
  * Shown once after first login. Required before any app usage.
+ *
+ * Phase 5A Fix #6: requires 3 explicit checkboxes before "I agree"
+ * is enabled. Each checkbox maps to a key product trust statement.
  */
 import { useState } from 'react'
 import WBBrand from '../components/ui/WBBrand'
@@ -20,17 +23,28 @@ const sections = [
   { title: 'a3_erasure', body: 'a3_erasureBody' },
 ] as const
 
+const checkboxKeys = ['a3_check1', 'a3_check2', 'a3_check3'] as const
+
 export default function ConsentPage({ onAccept }: Props) {
   const [loading, setLoading] = useState(false)
   const [declined, setDeclined] = useState(false)
+  const [error, setError] = useState('')
+  const [checks, setChecks] = useState([false, false, false])
+
+  const allChecked = checks.every(Boolean)
+
+  const toggleCheck = (i: number) => {
+    setChecks(prev => prev.map((v, j) => j === i ? !v : v))
+  }
 
   const handleAccept = async () => {
     setLoading(true)
+    setError('')
     try {
       await api.acceptConsent()
       onAccept()
-    } catch {
-      // Retry silently
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('a1_errNet'))
     } finally {
       setLoading(false)
     }
@@ -57,6 +71,21 @@ export default function ConsentPage({ onAccept }: Props) {
             </p>
           </div>
         ))}
+
+        {/* Required checkboxes */}
+        <div className="mt-8 pt-6 border-t border-line flex flex-col gap-4">
+          {checkboxKeys.map((key, i) => (
+            <label key={key} className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={checks[i]}
+                onChange={() => toggleCheck(i)}
+                className="mt-1 w-4 h-4 accent-accent-700 shrink-0"
+              />
+              <span className="text-[14px] text-ink-700 leading-relaxed">{t(key)}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* Sticky footer */}
@@ -64,9 +93,17 @@ export default function ConsentPage({ onAccept }: Props) {
         {declined && (
           <p className="text-caption text-alert-low-fg mb-3">{t('a3_declined')}</p>
         )}
-        <WBButton kind="primary" full onClick={handleAccept} disabled={loading}>
+        {error && (
+          <p className="text-caption text-alert-low-fg mb-3">{error}</p>
+        )}
+        <WBButton kind="primary" full onClick={handleAccept} disabled={loading || !allChecked}>
           {t('a3_agree')}
         </WBButton>
+        {!allChecked && (
+          <p className="text-micro text-ink-400 text-center mt-2">
+            {t('a3_intro')}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setDeclined(true)}

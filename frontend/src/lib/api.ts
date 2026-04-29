@@ -163,8 +163,10 @@ class WellbeingApiClient {
   }
 
   // ------------- Dashboard -----------------------------------------------
-  async dashboardSummary(periodDays = 7): Promise<DashboardSummary> {
-    const r = await fetch(`${this.baseUrl}/dashboard/summary?period=${periodDays}`, { headers: this.headers() })
+  async dashboardSummary(periodDays = 7, departmentId?: string): Promise<DashboardSummary> {
+    let url = `${this.baseUrl}/dashboard/summary?period=${periodDays}`
+    if (departmentId) url += `&departmentId=${encodeURIComponent(departmentId)}`
+    const r = await fetch(url, { headers: this.headers() })
     if (!r.ok) throw new Error(await this.parseError(r))
     return r.json()
   }

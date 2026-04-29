@@ -1,5 +1,13 @@
 /**
  * Employee flow: B5 (home) → B1 (check-in) → B2 (thanks) → B3 (follow-up) → B4 (comment)
+ *
+ * Phase 5A fixes:
+ * - Anonymous mode is now the DEFAULT (Fix #1)
+ * - All check-in data (energy, supportQ, workloadQ, comment) is collected
+ *   across screens and submitted in a SINGLE POST at the end (Fix #2).
+ *   This fixes the bug where anonymous follow-up/comment silently failed
+ *   because PATCH endpoints required user_id ownership.
+ * - No silent catch blocks — all errors are surfaced to the user (Fix #3)
  */
 import { useCallback, useEffect, useState } from 'react'
 import BatteryMeter from '../components/BatteryMeter'
@@ -13,22 +21,20 @@ import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 import type { TeamUpdate } from '../types'
 
-type Screen = 'home' | 'checkin' | 'thanks' | 'followup' | 'comment'
+type Screen = 'home' | 'checkin' | 'followup' | 'comment' | 'submitting' | 'thanks' | 'error'
 
 export default function HomePage() {
   const { user, logout } = useAuth()
   const [screen, setScreen] = useState<Screen>('home')
   const [energy, setEnergy] = useState(50)
-  const [anon, setAnon] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [checkInId, setCheckInId] = useState<string | null>(null)
+  // Fix #1: anonymous is the DEFAULT — trust-first design
+  const [anon, setAnon] = useState(true)
   const [submittedAt, setSubmittedAt] = useState<string>('')
+  const [errorMsg, setErrorMsg] = useState<string>('')
 
-  // Follow-up state
+  // Collected across screens, submitted once at the end (Fix #2)
   const [supportQ, setSupportQ] = useState<boolean | null>(null)
   const [workloadQ, setWorkloadQ] = useState<boolean | null>(null)
-
-  // Comment state
   const [comment, setComment] = useState('')
 
   // Team updates
@@ -36,48 +42,63 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user?.department_id) {
-      api.listTeamUpdates(user.department_id, 5).then(r => setUpdates(r.items)).catch(() => {})
+      api.listTeamUpdates(user.department_id, 5)
+        .then(r => setUpdates(r.items))
+        .catch(() => { /* team updates fetch failure is non-critical */ })
     }
   }, [user?.department_id])
 
-  const handleSubmit = useCallback(async () => {
-    setLoading(true)
+  /**
+   * Final submit — sends ALL collected data in a single POST.
+   * This is the only network call in the employee check-in flow.
+   * Works correctly for both anonymous and identified modes.
+   */
+  const handleFinalSubmit = useCallback(async () => {
+    setScreen('submitting')
+    setErrorMsg('')
     try {
-      const res = await api.submitCheckIn({ energy, anonMode: anon })
-      setCheckInId(res.checkInId)
+      await api.submitCheckIn({
+        energy,
+        anonMode: anon,
+        supportQ: supportQ ?? undefined,
+        workloadQ: workloadQ ?? undefined,
+        comment: comment.trim() || undefined,
+      })
       setSubmittedAt(new Date().toLocaleTimeString())
       setScreen('thanks')
-    } catch {
-      // Error handling
-    } finally {
-      setLoading(false)
+    } catch (err) {
+      // Fix #3: surface errors to the user, never swallow
+      setErrorMsg(
+        err instanceof Error ? err.message : t('a1_errNet')
+      )
+      setScreen('error')
+    }
+  }, [energy, anon, supportQ, workloadQ, comment])
+
+  /** Quick submit — energy only, skip optional questions */
+  const handleQuickSubmit = useCallback(async () => {
+    setScreen('submitting')
+    setErrorMsg('')
+    try {
+      await api.submitCheckIn({ energy, anonMode: anon })
+      setSubmittedAt(new Date().toLocaleTimeString())
+      setScreen('thanks')
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error ? err.message : t('a1_errNet')
+      )
+      setScreen('error')
     }
   }, [energy, anon])
 
-  const handleFollowUpDone = useCallback(async () => {
-    if (checkInId && (supportQ !== null || workloadQ !== null)) {
-      try {
-        await api.updateFollowUp(checkInId, {
-          supportQ: supportQ ?? undefined,
-          workloadQ: workloadQ ?? undefined,
-        })
-      } catch {}
-    }
-    setScreen('comment')
-  }, [checkInId, supportQ, workloadQ])
-
-  const handleCommentSave = useCallback(async () => {
-    if (checkInId && comment.trim()) {
-      try {
-        await api.updateComment(checkInId, comment.trim())
-      } catch {}
-    }
+  const resetFlow = () => {
     setScreen('home')
-    setCheckInId(null)
+    setEnergy(50)
     setComment('')
     setSupportQ(null)
     setWorkloadQ(null)
-  }, [checkInId, comment])
+    setErrorMsg('')
+  }
 
   const timeOfDay = (() => {
     const h = new Date().getHours()
@@ -85,6 +106,34 @@ export default function HomePage() {
     if (h < 17) return 'afternoon'
     return 'evening'
   })()
+
+  // ===== Submitting state =====
+  if (screen === 'submitting') {
+    return (
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6">
+        <div className="text-ink-500 text-body">{t('b1_submitting')}</div>
+      </div>
+    )
+  }
+
+  // ===== Error state (Fix #3) =====
+  if (screen === 'error') {
+    return (
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6">
+        <div className="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center mb-6">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-500)" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h1 className="text-h3 font-semibold text-ink-900 text-center">{t('f1_netErr')}</h1>
+        <p className="text-body text-ink-500 text-center mt-2 max-w-[300px]">{errorMsg}</p>
+        <div className="flex gap-3 mt-6">
+          <WBButton kind="primary" onClick={handleFinalSubmit}>{t('f1_retry')}</WBButton>
+          <WBButton kind="ghost" onClick={resetFlow}>{t('f3_home')}</WBButton>
+        </div>
+      </div>
+    )
+  }
 
   // ===== B5 Home =====
   if (screen === 'home') {
@@ -160,9 +209,15 @@ export default function HomePage() {
 
         <WBAnonToggle anon={anon} onToggle={() => setAnon(!anon)} />
 
-        <WBButton kind="primary" full className="mt-4" onClick={handleSubmit} disabled={loading}>
-          {loading ? t('b1_submitting') : t('b1_submit')}
-        </WBButton>
+        {/* Two submit paths: quick (energy only) or continue to optional questions */}
+        <div className="flex gap-2 mt-4">
+          <WBButton kind="ghost" onClick={handleQuickSubmit}>
+            {t('b1_submit')}
+          </WBButton>
+          <WBButton kind="primary" className="flex-1" onClick={() => setScreen('followup')}>
+            {t('b3_done')}
+          </WBButton>
+        </div>
       </div>
     )
   }
@@ -180,8 +235,8 @@ export default function HomePage() {
         <p className="text-body text-ink-500 mt-2 text-center">{t('b2_body')}</p>
         <p className="text-caption font-mono text-ink-400 mt-4">{t('b2_time')} {submittedAt}</p>
 
-        <WBButton kind="primary" className="mt-8" onClick={() => setScreen('followup')}>
-          {t('b3_done')}
+        <WBButton kind="primary" className="mt-8" onClick={resetFlow}>
+          {t('f3_home')}
         </WBButton>
       </div>
     )
@@ -195,7 +250,6 @@ export default function HomePage() {
         <h1 className="text-h2 font-semibold text-ink-900 mt-6">{t('b3_heading')}</h1>
 
         <div className="flex flex-col gap-4 mt-6">
-          {/* Q1 */}
           <WBCard padding={16}>
             <p className="text-body text-ink-900 mb-3">{t('b3_q1')}</p>
             <div className="flex gap-2">
@@ -205,7 +259,6 @@ export default function HomePage() {
             </div>
           </WBCard>
 
-          {/* Q2 */}
           <WBCard padding={16}>
             <p className="text-body text-ink-900 mb-3">{t('b3_q2')}</p>
             <div className="flex gap-2">
@@ -219,8 +272,8 @@ export default function HomePage() {
         <div className="flex-1" />
 
         <div className="flex gap-2 mt-6">
-          <WBButton kind="ghost" onClick={() => setScreen('comment')}>{t('b3_skipAll')}</WBButton>
-          <WBButton kind="primary" className="flex-1" onClick={handleFollowUpDone}>{t('b3_done')}</WBButton>
+          <WBButton kind="ghost" onClick={handleFinalSubmit}>{t('b3_skipAll')}</WBButton>
+          <WBButton kind="primary" className="flex-1" onClick={() => setScreen('comment')}>{t('b3_done')}</WBButton>
         </div>
       </div>
     )
@@ -253,8 +306,8 @@ export default function HomePage() {
       <div className="flex-1" />
 
       <div className="flex gap-2 mt-6">
-        <WBButton kind="ghost" onClick={handleCommentSave}>{t('b4_skip')}</WBButton>
-        <WBButton kind="primary" className="flex-1" onClick={handleCommentSave}>{t('b4_save')}</WBButton>
+        <WBButton kind="ghost" onClick={handleFinalSubmit}>{t('b4_skip')}</WBButton>
+        <WBButton kind="primary" className="flex-1" onClick={handleFinalSubmit}>{t('b4_save')}</WBButton>
       </div>
     </div>
   )

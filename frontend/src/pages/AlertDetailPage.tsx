@@ -117,6 +117,11 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
             onChange={e => setNote(e.target.value)}
           />
 
+          {/* TODO Phase 5C: The design intent is to make NOT publishing harder
+              than publishing. Currently this is an optional checkbox defaulting
+              to false. Phase 5C should redesign this as a guided post-closure
+              publish flow where the manager must either publish or provide a
+              non-publication reason. See HANDOFF.md §6 state machine and §10. */}
           <label className="flex items-start gap-3 mt-4 cursor-pointer">
             <input
               type="checkbox"

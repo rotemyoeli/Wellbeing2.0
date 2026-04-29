@@ -15,9 +15,10 @@ const strings = {
   a1_emailLabel: { en: 'Work email', he: 'מייל עבודה' },
   a1_emailPlaceholder: { en: 'name@hospital.org.il', he: 'name@hospital.org.il' },
   a1_send: { en: 'Send code', he: 'שלח קוד' },
+  // Fix #4: privacy copy aligned to actual architecture — no client-side hashing claim
   a1_privacyReminder: {
-    en: 'Your reports are never used for HR decisions, performance reviews, or pay. Anonymous reports hash your identity before leaving this device.',
-    he: 'הדיווחים שלך לא משמשים להחלטות משאבי אנוש, הערכות ביצוע או שכר. דיווחים אנונימיים מצפינים את הזהות שלך לפני שהם עוזבים את המכשיר.',
+    en: 'Your reports are never used for HR decisions, performance reviews, or pay. In anonymous mode, your identity is separated from your report on the server and cannot be recovered.',
+    he: 'הדיווחים שלך לא משמשים להחלטות משאבי אנוש, הערכות ביצוע או שכר. במצב אנונימי, הזהות שלך מופרדת מהדיווח בשרת ולא ניתנת לשחזור.',
   },
   a1_errRate: { en: 'Too many attempts. Try again in a few minutes.', he: 'יותר מדי ניסיונות. נסה שוב בעוד כמה דקות.' },
   a1_errEmail: { en: 'Please enter a valid email address.', he: 'אנא הזן כתובת מייל תקינה.' },
@@ -51,9 +52,10 @@ const strings = {
     he: 'אנחנו לעולם לא משתמשים במידע שלך להחלטות משאבי אנוש, הערכות ביצוע, פעולות משמעת או שכר. אנחנו לעולם לא מוכרים או משתפים מידע אישי עם צדדים שלישיים.',
   },
   a3_anon: { en: 'Anonymity guarantee', he: 'ערובת אנונימיות' },
+  // Fix #4: truthful anonymity description — server-side separation, not client-side hashing
   a3_anonBody: {
-    en: 'In anonymous mode, your identity is hashed with a one-way function before leaving your device. The server never receives your user ID alongside anonymous reports. This is irreversible by design.',
-    he: 'במצב אנונימי, הזהות שלך מוצפנת בפונקציה חד-כיוונית לפני שהיא עוזבת את המכשיר. השרת לעולם לא מקבל את מזהה המשתמש שלך לצד דיווחים אנונימיים. זה בלתי הפיך מעצם התכנון.',
+    en: 'In anonymous mode, the server uses a one-way hash to separate your identity from your report. Your user ID is never stored alongside anonymous reports. This separation is irreversible by design.',
+    he: 'במצב אנונימי, השרת משתמש בפונקציית גיבוב חד-כיוונית כדי להפריד את הזהות שלך מהדיווח. מזהה המשתמש שלך לעולם לא נשמר לצד דיווחים אנונימיים. הפרדה זו בלתי הפיכה מעצם התכנון.',
   },
   a3_erasure: { en: 'Your right to erasure', he: 'זכותך למחיקה' },
   a3_erasureBody: {
@@ -63,6 +65,19 @@ const strings = {
   a3_agree: { en: 'I agree', he: 'אני מסכים' },
   a3_decline: { en: 'I do not agree', he: 'אני לא מסכים' },
   a3_declined: { en: 'You must accept the privacy notice to use this service.', he: 'עליך לאשר את מדיניות הפרטיות כדי להשתמש בשירות.' },
+  // Fix #6: consent checkboxes
+  a3_check1: {
+    en: 'I understand what data is collected and how it is used.',
+    he: 'אני מבין אילו נתונים נאספים וכיצד הם משמשים.',
+  },
+  a3_check2: {
+    en: 'I understand this data is never used for HR, pay, performance, or disciplinary decisions.',
+    he: 'אני מבין שהנתונים לעולם לא משמשים להחלטות משאבי אנוש, שכר, ביצוע או משמעת.',
+  },
+  a3_check3: {
+    en: 'I understand the difference between anonymous and identified reporting, and that anonymous data cannot be deleted.',
+    he: 'אני מבין את ההבדל בין דיווח אנונימי למזוהה, ושמידע אנונימי לא ניתן למחיקה.',
+  },
 
   // Employee — B1
   b1_title: { en: 'How are you, right now?', he: 'איך אתה מרגיש, עכשיו?' },
@@ -118,7 +133,8 @@ const strings = {
   f3_notFound: { en: 'Page not found', he: 'הדף לא נמצא' },
   f3_notFoundSub: { en: 'The page you\'re looking for doesn\'t exist.', he: 'הדף שאתה מחפש לא קיים.' },
   f3_home: { en: 'Back to home', he: 'חזרה לדף הבית' },
-  offline: { en: 'You\'re offline. Your check-in is saved and will send when back online.', he: 'אתה לא מחובר. הצ\'ק-אין שלך נשמר וישלח כשתתחבר מחדש.' },
+  // Fix #5: no offline queue exists — do not claim check-in is saved
+  offline: { en: 'You\'re offline. Please reconnect to submit your check-in.', he: 'אתה לא מחובר. התחבר מחדש כדי לשלוח את הצ\'ק-אין שלך.' },
 
   // Manager — C1
   c1_title: { en: 'Ward Dashboard', he: 'לוח בקרה מחלקתי' },
