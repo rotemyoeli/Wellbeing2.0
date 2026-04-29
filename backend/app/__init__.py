@@ -78,6 +78,11 @@ def create_app(config_name: str | None = None) -> Flask:
     register_dev_mode_middleware(app)
     register_rate_limiter(app)
 
+    # ---- Root route (avoids confusing 404 on /) -----------------------------
+    @app.get("/")
+    def root():
+        return {"message": "Wellbeing API", "docs": "/api/v1/health"}, 200
+
     # ---- Seed the synthetic DEV_MODE user, if applicable --------------------
     # No-op if DEV_MODE is off. Tolerates "users table missing" by logging a
     # warning — the next boot after `flask db upgrade` will seed it.
