@@ -7,8 +7,7 @@ ENV PYTHONPATH=/app
 ENV FLASK_APP=app:create_app()
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt && \
-    which gunicorn && gunicorn --version
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
