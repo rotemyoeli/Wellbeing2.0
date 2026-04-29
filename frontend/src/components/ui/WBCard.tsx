@@ -11,7 +11,7 @@ export default function WBCard({ children, sunken = false, className = '', paddi
   return (
     <div
       className={`
-        rounded-lg border border-line
+        rounded-xl border border-line shadow-sm
         ${sunken ? 'bg-sunken' : 'bg-surface'}
         ${className}
       `}

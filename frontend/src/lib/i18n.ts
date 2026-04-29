@@ -192,6 +192,12 @@ const strings = {
   role_social_worker: { en: 'Social worker', he: 'עובד סוציאלי' },
   role_admin: { en: 'Admin', he: 'מנהל מערכת' },
 
+  // Check-in variants
+  variant_label: { en: 'Check-in metaphor', he: 'מטאפורת דיווח' },
+  variant_a: { en: 'Battery', he: 'סוללה' },
+  variant_b: { en: 'Orb', he: 'כדור' },
+  variant_c: { en: '5 Faces', he: '5 פנים' },
+
   // UI
   signOut: { en: 'Sign out', he: 'התנתק' },
   devMode: { en: 'DEV MODE', he: 'מצב פיתוח' },

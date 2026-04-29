@@ -76,11 +76,12 @@ export default {
         '2xl': '32px',
         '3xl': '48px',
       },
+      // Pulse v5 uses larger rounding
       borderRadius: {
-        sm: '4px',
-        md: '6px',
-        lg: '10px',
-        xl: '14px',
+        sm: '10px',
+        md: '14px',
+        lg: '20px',
+        xl: '28px',
         pill: '999px',
         battery: '24px',
       },

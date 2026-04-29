@@ -13,6 +13,8 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import BatteryMeter from '../components/BatteryMeter'
+import FacesMeter from '../components/FacesMeter'
+import OrbMeter from '../components/OrbMeter'
 import WBAnonToggle from '../components/ui/WBAnonToggle'
 import WBBrand from '../components/ui/WBBrand'
 import WBButton from '../components/ui/WBButton'
@@ -24,6 +26,13 @@ import { t } from '../lib/i18n'
 import type { TeamUpdate } from '../types'
 
 type Screen = 'home' | 'checkin' | 'followup' | 'comment' | 'submitting' | 'thanks' | 'error'
+type CheckInVariant = 'battery' | 'orb' | 'faces'
+
+function getSavedVariant(): CheckInVariant {
+  const saved = localStorage.getItem('wellbeing.variant')
+  if (saved === 'orb' || saved === 'faces') return saved
+  return 'battery'
+}
 
 export default function HomePage() {
   const { user, logout } = useAuth()
@@ -31,6 +40,12 @@ export default function HomePage() {
   const [energy, setEnergy] = useState(50)
   const [anon, setAnon] = useState(true)
   const [submittedAt, setSubmittedAt] = useState('')
+  const [variant, setVariant] = useState<CheckInVariant>(getSavedVariant)
+
+  const changeVariant = (v: CheckInVariant) => {
+    setVariant(v)
+    localStorage.setItem('wellbeing.variant', v)
+  }
   const [errorMsg, setErrorMsg] = useState('')
 
   // Collected across screens, submitted once
@@ -205,17 +220,37 @@ export default function HomePage() {
     )
   }
 
-  // ===== B1 Check-in — battery with clear submit/continue split =====
+  // ===== B1 Check-in — with 3-variant chooser =====
   if (screen === 'checkin') {
     return (
       <div className="min-h-screen bg-paper flex flex-col px-6 pt-6 pb-safe">
-        <WBBrand />
+        <div className="flex items-center justify-between">
+          <WBBrand />
+          {/* Variant chooser — persisted in localStorage */}
+          <div className="flex gap-1 bg-sunken rounded-pill p-0.5">
+            {(['battery', 'orb', 'faces'] as const).map(v => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => changeVariant(v)}
+                className={`px-2.5 py-1 rounded-pill text-micro font-medium transition ${
+                  variant === v ? 'bg-accent-700 text-white' : 'text-ink-500'
+                }`}
+              >
+                {t(v === 'battery' ? 'variant_a' : v === 'orb' ? 'variant_b' : 'variant_c')}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <h1 className="text-h2 font-semibold text-ink-900 mt-4">{t('b1_title')}</h1>
         <p className="text-caption text-ink-400 mt-1">{t('b1_hint')}</p>
 
-        {/* Battery — centered, one-hand reach */}
+        {/* Selected meter variant — centered */}
         <div className="flex-1 flex items-center justify-center py-2">
-          <BatteryMeter value={energy} onChange={setEnergy} />
+          {variant === 'battery' && <BatteryMeter value={energy} onChange={setEnergy} />}
+          {variant === 'orb' && <OrbMeter value={energy} onChange={setEnergy} />}
+          {variant === 'faces' && <FacesMeter value={energy} onChange={setEnergy} />}
         </div>
 
         {/* Anon toggle */}
