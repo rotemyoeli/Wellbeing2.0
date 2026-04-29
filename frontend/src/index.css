@@ -127,4 +127,14 @@
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
 }

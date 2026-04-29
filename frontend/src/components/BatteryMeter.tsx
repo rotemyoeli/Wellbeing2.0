@@ -1,3 +1,13 @@
+/**
+ * Battery energy meter — the core check-in widget.
+ *
+ * Phase 5B: improved for one-hand mobile use:
+ * - Larger touch target (280x280 per spec)
+ * - Touch/pointer capture for smooth drag
+ * - Keyboard accessible (arrows, page up/down, home/end)
+ * - Value text centered in battery body
+ * - Calm accent fill, no alarming colors
+ */
 import { useCallback, useRef } from 'react'
 
 interface Props {
@@ -7,7 +17,7 @@ interface Props {
   height?: number
 }
 
-export default function BatteryMeter({ value, onChange, width = 170, height = 310 }: Props) {
+export default function BatteryMeter({ value, onChange, width = 180, height = 320 }: Props) {
   const bodyRef = useRef<SVGRectElement>(null)
 
   const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)))
@@ -20,12 +30,13 @@ export default function BatteryMeter({ value, onChange, width = 170, height = 31
     onChange(pct)
   }, [onChange])
 
-  const capW = width * 0.3
-  const capH = 14
+  const capW = width * 0.28
+  const capH = 12
   const bodyY = capH + 4
   const bodyH = height - bodyY
-  const fillH = (value / 100) * (bodyH - 8)
-  const r = 14
+  const r = 16
+  const inset = 6
+  const fillH = (value / 100) * (bodyH - inset * 2)
 
   return (
     <svg
@@ -36,19 +47,25 @@ export default function BatteryMeter({ value, onChange, width = 170, height = 31
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
+      aria-valuetext={`Energy: ${value} of 100`}
       aria-label="Energy level"
       tabIndex={0}
-      className="cursor-pointer no-tap-highlight select-none"
-      onPointerDown={(e) => { (e.target as Element).setPointerCapture(e.pointerId); handlePointer(e) }}
+      className="cursor-pointer no-tap-highlight select-none outline-none focus-visible:drop-shadow-[0_0_6px_var(--wb-accent-500)]"
+      style={{ touchAction: 'none' }}
+      onPointerDown={(e) => {
+        (e.target as Element).setPointerCapture(e.pointerId)
+        handlePointer(e)
+      }}
       onPointerMove={(e) => { if (e.buttons > 0) handlePointer(e) }}
       onKeyDown={(e) => {
         if (!onChange) return
-        if (e.key === 'ArrowUp') onChange(clamp(value + 1))
-        else if (e.key === 'ArrowDown') onChange(clamp(value - 1))
-        else if (e.key === 'PageUp') onChange(clamp(value + 10))
-        else if (e.key === 'PageDown') onChange(clamp(value - 10))
-        else if (e.key === 'Home') onChange(0)
-        else if (e.key === 'End') onChange(100)
+        const step = e.shiftKey ? 10 : 1
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); onChange(clamp(value + step)) }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); onChange(clamp(value - step)) }
+        else if (e.key === 'PageUp') { e.preventDefault(); onChange(clamp(value + 10)) }
+        else if (e.key === 'PageDown') { e.preventDefault(); onChange(clamp(value - 10)) }
+        else if (e.key === 'Home') { e.preventDefault(); onChange(0) }
+        else if (e.key === 'End') { e.preventDefault(); onChange(100) }
       }}
     >
       {/* Cap */}
@@ -57,34 +74,39 @@ export default function BatteryMeter({ value, onChange, width = 170, height = 31
         width={capW} height={capH}
         rx={4} fill="var(--wb-line-bold)"
       />
-      {/* Body outline */}
+      {/* Body */}
       <rect
         ref={bodyRef}
-        x={4} y={bodyY}
-        width={width - 8} height={bodyH}
+        x={2} y={bodyY}
+        width={width - 4} height={bodyH}
         rx={r} fill="var(--wb-sunken)"
-        stroke="var(--wb-line-bold)" strokeWidth={2}
+        stroke="var(--wb-line-bold)" strokeWidth={1.5}
       />
       {/* Fill */}
-      <rect
-        x={8} y={bodyY + bodyH - 4 - fillH}
-        width={width - 16} height={fillH}
-        rx={r - 4} fill="var(--wb-accent-700)"
-      />
-      {/* Value text */}
+      {fillH > 0 && (
+        <rect
+          x={2 + inset} y={bodyY + bodyH - inset - fillH}
+          width={width - 4 - inset * 2} height={fillH}
+          rx={r - inset + 2} fill="var(--wb-accent-700)"
+          style={{ transition: 'height 50ms ease-out, y 50ms ease-out' }}
+        />
+      )}
+      {/* Value */}
       <text
-        x={width / 2} y={bodyY + bodyH / 2 - 8}
+        x={width / 2} y={bodyY + bodyH / 2 - 6}
         textAnchor="middle"
         dominantBaseline="central"
-        className="fill-ink-900 select-none pointer-events-none"
-        style={{ fontSize: 72, fontWeight: 700, fontFamily: 'Heebo, sans-serif' }}
+        className="select-none pointer-events-none"
+        fill="var(--wb-ink-900)"
+        style={{ fontSize: 64, fontWeight: 700, fontFamily: 'Heebo, sans-serif' }}
       >
         {value}
       </text>
       <text
-        x={width / 2} y={bodyY + bodyH / 2 + 34}
+        x={width / 2} y={bodyY + bodyH / 2 + 30}
         textAnchor="middle"
-        className="fill-ink-500 select-none pointer-events-none"
+        className="select-none pointer-events-none"
+        fill="var(--wb-ink-400)"
         style={{ fontSize: 14, fontWeight: 500 }}
       >
         %
