@@ -1,0 +1,29 @@
+# Optional local PostgreSQL for RLS testing.
+# Default dev path uses SQLite — this is here for when you need
+# to validate RLS policies before staging deploy.
+#
+# Usage:
+#   docker compose up -d postgres
+#   # then in your .env:
+#   #   DATABASE_URL=postgresql://wellbeing:wellbeing@localhost:5432/wellbeing
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wellbeing-postgres
+    environment:
+      POSTGRES_USER: wellbeing
+      POSTGRES_PASSWORD: wellbeing
+      POSTGRES_DB: wellbeing
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wellbeing"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

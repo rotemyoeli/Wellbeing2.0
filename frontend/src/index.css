@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Spec v2 §11 — single-thumb mobile design */
+@layer base {
+  html {
+    /* Prevent iOS rubber-band scroll on the check-in screen */
+    overscroll-behavior-y: contain;
+  }
+  body {
+    @apply bg-white text-ink-900 antialiased;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    /* iOS safe areas */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Touch targets >=44px (Spec v2 §11) */
+  button {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+@layer utilities {
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

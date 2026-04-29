@@ -1,0 +1,31 @@
+# Backend production dependencies.
+# Pin major versions; let minors float.
+# Last updated: 2026-04-29
+
+# Core
+Flask>=3.0,<4.0
+python-dotenv>=1.0,<2.0
+
+# Database / ORM
+SQLAlchemy>=2.0,<3.0
+Flask-SQLAlchemy>=3.1,<4.0
+Flask-Migrate>=4.0,<5.0
+alembic>=1.13,<2.0
+
+# Auth / Security
+Flask-JWT-Extended>=4.6,<5.0
+Flask-CORS>=4.0,<5.0
+bcrypt>=4.1,<5.0
+
+# Postgres driver (optional — only needed when DATABASE_URL is postgres://)
+# Comment out if you only ever run SQLite locally
+psycopg2-binary>=2.9,<3.0
+
+# Validation
+pydantic>=2.5,<3.0
+
+# Crypto (AES-256-GCM for comment column-level encryption)
+cryptography>=42.0,<46.0
+
+# HTTP / production server
+gunicorn>=21.2,<22.0   # for Railway / Linux deploy; Windows dev uses Flask's built-in server

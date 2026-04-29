@@ -1,0 +1,22 @@
+Database migrations for wellbeing-app, managed by Flask-Migrate (Alembic).
+
+Run from the `backend/` directory with the venv active:
+
+    flask db upgrade           # apply all pending migrations
+    flask db downgrade -1      # roll back one migration
+    flask db migrate -m "msg"  # auto-generate a new migration from model changes
+    flask db current           # show the current applied revision
+    flask db history           # show the migration history
+
+The initial schema migration is `versions/0001_initial_schema.py`. Apply it
+on a fresh database with `flask db upgrade`.
+
+NOTES
+-----
+* Migrations are auto-generated from SQLAlchemy models. Always review the
+  generated file before committing — autogenerate misses some things
+  (CHECK constraints, certain index types, server defaults).
+* The CHECK constraint enforcing the anonymity invariant on `checkins`
+  is critical to the architectural anonymity guarantee. Do NOT remove it.
+* For production deployments, add `flask db upgrade` as a deploy step
+  *before* the new app code starts serving traffic.

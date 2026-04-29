@@ -1,0 +1,10 @@
+{
+  "name": "Wellbeing Check-In",
+  "short_name": "Wellbeing",
+  "description": "Privacy-first wellbeing pulse for medical ward staff",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0F172A",
+  "background_color": "#FFFFFF",
+  "icons": []
+}
