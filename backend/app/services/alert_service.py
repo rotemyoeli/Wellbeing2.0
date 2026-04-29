@@ -28,6 +28,7 @@ from app.extensions import db
 from app.models import utcnow
 from app.models.alert import Alert
 from app.models.checkin import CheckIn
+from app.models.team_update import TeamUpdate
 
 
 class AlertWorkflowError(Exception):
@@ -90,6 +91,8 @@ class AlertService:
         step: int,
         actor_id: str,
         note: Optional[str] = None,
+        publish_to_team: bool = False,
+        department_id: Optional[str] = None,
     ) -> Alert:
         """
         Advance the alert state machine by one step.
@@ -98,6 +101,8 @@ class AlertService:
             step: 1 (Seen), 2 (Contacted), 3 (Closed)
             actor_id: the manager performing the action
             note: required if step == 3, otherwise optional
+            publish_to_team: if True on step 3, create a TeamUpdate from the note
+            department_id: required if publish_to_team is True
 
         Raises:
             AlertWorkflowError on invalid transition or missing note.
@@ -137,5 +142,102 @@ class AlertService:
             alert.closed_at = now
             alert.closure_note = note.strip()
 
+            # Optionally publish the closure note as a team update
+            if publish_to_team:
+                if not department_id:
+                    raise AlertWorkflowError(
+                        "department_id is required when publishing to team"
+                    )
+                team_update = TeamUpdate(
+                    author_id=actor_id,
+                    department_id=department_id,
+                    content=note.strip(),
+                    published_at=now,
+                )
+                db.session.add(team_update)
+                db.session.flush()
+                alert.team_update_id = team_update.update_id
+                alert.closure_published = True
+
+        db.session.flush()
+        return alert
+
+    # ---- Unpublished closures (C8 screen) --------------------------------
+
+    @staticmethod
+    def list_unpublished_closures(
+        days: int = 14,
+        limit: int = 50,
+    ) -> list[Alert]:
+        """
+        List closed alerts that were NOT published as team updates.
+        Used by C8 screen for Mehva admin escalation review.
+        """
+        cutoff = utcnow() - __import__("datetime").timedelta(days=days)
+        return (
+            db.session.query(Alert)
+            .filter(
+                Alert.status == "closed",
+                Alert.closure_published.is_(False),
+                Alert.closed_at >= cutoff,
+            )
+            .order_by(Alert.closed_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    @staticmethod
+    def list_published_closures(
+        days: int = 14,
+        limit: int = 50,
+    ) -> list[Alert]:
+        """List closed alerts that WERE published as team updates."""
+        cutoff = utcnow() - __import__("datetime").timedelta(days=days)
+        return (
+            db.session.query(Alert)
+            .filter(
+                Alert.status == "closed",
+                Alert.closure_published.is_(True),
+                Alert.closed_at >= cutoff,
+            )
+            .order_by(Alert.closed_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    @classmethod
+    def publish_closure(
+        cls,
+        alert: Alert,
+        *,
+        actor_id: str,
+        department_id: str,
+        content: Optional[str] = None,
+    ) -> Alert:
+        """
+        Retroactively publish a closed alert's note as a team update.
+        Used from C8 when manager decides to publish after initial closure.
+        """
+        if alert.status != "closed":
+            raise AlertWorkflowError("Only closed alerts can be published")
+        if alert.closure_published:
+            raise AlertWorkflowError("Alert closure is already published")
+
+        publish_content = content.strip() if content else alert.closure_note
+        if not publish_content:
+            raise AlertWorkflowError("No content to publish")
+
+        now = utcnow()
+        team_update = TeamUpdate(
+            author_id=actor_id,
+            department_id=department_id,
+            content=publish_content,
+            published_at=now,
+        )
+        db.session.add(team_update)
+        db.session.flush()
+
+        alert.team_update_id = team_update.update_id
+        alert.closure_published = True
         db.session.flush()
         return alert

@@ -25,13 +25,15 @@ from flask import current_app
 
 from app.extensions import db
 from app.models import utcnow
+from app.models.alert import Alert
 from app.models.checkin import CheckIn
 from app.models.user import User
 
 
 class DashboardService:
-    @staticmethod
+    @classmethod
     def summary(
+        cls,
         period_days: int = 7,
         department_id: Optional[str] = None,
     ) -> dict:
@@ -150,6 +152,36 @@ class DashboardService:
                 }
             )
 
+        # --- Closure-publish rate (C1 KPI) -----------------------------------
+        closed_alerts = (
+            db.session.query(Alert)
+            .filter(
+                Alert.status == "closed",
+                Alert.closed_at >= cutoff,
+            )
+            .all()
+        )
+        total_closed = len(closed_alerts)
+        total_published = sum(1 for a in closed_alerts if a.closure_published)
+        closure_publish_rate = (
+            round(total_published / total_closed, 3) if total_closed else None
+        )
+
+        # --- Nudges (C1 contextual guidance) ---------------------------------
+        nudges = cls._compute_nudges(
+            closed_alerts=closed_alerts,
+            reporting_rate=reporting_rate,
+            period_days=period_days,
+            trend=trend,
+        )
+
+        # --- Open alert count ------------------------------------------------
+        open_alerts_count = (
+            db.session.query(Alert)
+            .filter(Alert.status == "open")
+            .count()
+        )
+
         return {
             "period_days": period_days,
             "total_checkins": total,
@@ -161,4 +193,84 @@ class DashboardService:
             "trend": trend,
             "role_breakdown": role_breakdown,
             "aggregation_threshold": threshold,
+            "closure_publish_rate": closure_publish_rate,
+            "total_closed_alerts": total_closed,
+            "total_published_closures": total_published,
+            "open_alerts_count": open_alerts_count,
+            "nudges": nudges,
         }
+
+    @classmethod
+    def _compute_nudges(
+        cls,
+        *,
+        closed_alerts: list,
+        reporting_rate: float,
+        period_days: int,
+        trend: list[dict],
+    ) -> list[dict]:
+        """
+        Compute contextual nudges for the manager dashboard (C1).
+
+        Nudge types from the design pack:
+        - under_publish: >=3 of last 5 closures were unpublished
+        - over_publish:  >=4 of last 5 closures were published
+        - zero_closures: open alerts piling up, none closed
+        - decay:         reporting rate dropped >10% over two weeks
+        """
+        nudges = []
+
+        # Last 5 closures analysis
+        recent = sorted(closed_alerts, key=lambda a: a.closed_at or a.created_at, reverse=True)[:5]
+        if len(recent) >= 3:
+            published_count = sum(1 for a in recent if a.closure_published)
+            unpublished_count = len(recent) - published_count
+
+            if unpublished_count >= 3:
+                nudges.append({
+                    "type": "under_publish",
+                    "message": "Your team isn't hearing back. Consider publishing closure notes.",
+                    "severity": "warning",
+                })
+            elif published_count >= 4:
+                nudges.append({
+                    "type": "over_publish",
+                    "message": "Frequent updates can lose meaning. Save publishing for significant actions.",
+                    "severity": "info",
+                })
+
+        # Zero closures check
+        if not closed_alerts:
+            from app.models.alert import Alert as AlertModel
+            open_count = (
+                db.session.query(AlertModel)
+                .filter(AlertModel.status == "open")
+                .count()
+            )
+            if open_count >= 3:
+                nudges.append({
+                    "type": "zero_closures",
+                    "message": f"{open_count} open alerts need attention.",
+                    "severity": "warning",
+                })
+
+        # Decay check (reporting rate trend)
+        if len(trend) >= 14 and period_days >= 14:
+            first_week = trend[:7]
+            second_week = trend[7:14]
+            first_avg = (
+                sum(d["count"] for d in first_week) / 7
+                if first_week else 0
+            )
+            second_avg = (
+                sum(d["count"] for d in second_week) / 7
+                if second_week else 0
+            )
+            if first_avg > 0 and second_avg < first_avg * 0.9:
+                nudges.append({
+                    "type": "decay",
+                    "message": "Reporting has dropped over the past two weeks.",
+                    "severity": "warning",
+                })
+
+        return nudges

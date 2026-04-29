@@ -34,6 +34,15 @@ class Alert(db.Model, TimestampMixin):
     closure_note = db.Column(db.Text, nullable=True)
     escalated_at = db.Column(db.DateTime, nullable=True)
 
+    # Closed-loop tracking: links alert closure to a published team update.
+    # If team_update_id is NULL after closure, the manager chose not to publish.
+    team_update_id = db.Column(
+        db.String(36),
+        db.ForeignKey("team_updates.update_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    closure_published = db.Column(db.Boolean, default=False, nullable=False)
+
     __table_args__ = (
         db.CheckConstraint(
             "type IN ('low', 'high')",
@@ -55,6 +64,9 @@ class Alert(db.Model, TimestampMixin):
             "ack_at": self.ack_at.isoformat() if self.ack_at else None,
             "contacted_at": self.contacted_at.isoformat() if self.contacted_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
+            "closure_note": self.closure_note,
             "escalated_at": self.escalated_at.isoformat() if self.escalated_at else None,
+            "team_update_id": self.team_update_id,
+            "closure_published": self.closure_published,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

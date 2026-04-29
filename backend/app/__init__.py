@@ -21,7 +21,7 @@ from app.config import get_config  # noqa: E402  (after dotenv load by design)
 from app.extensions import cors, db, jwt, migrate  # noqa: E402
 
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 
 def create_app(config_name: str | None = None) -> Flask:
