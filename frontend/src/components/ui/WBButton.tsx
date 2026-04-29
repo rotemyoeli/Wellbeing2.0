@@ -34,7 +34,8 @@ export default function WBButton({
     <button
       className={`
         inline-flex items-center justify-center rounded-md font-medium
-        tracking-wide transition-all duration-100
+        tracking-wide transition-all duration-100 outline-none
+        focus-visible:shadow-focus focus-visible:ring-2 focus-visible:ring-accent-500
         disabled:opacity-50 disabled:cursor-not-allowed
         ${kindStyles[kind]} ${sizeStyles[size]}
         ${full ? 'w-full' : ''}

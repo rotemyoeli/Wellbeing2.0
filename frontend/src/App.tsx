@@ -1,3 +1,13 @@
+/**
+ * App router — Phase 5E: hash-based routing for deep links + back/refresh.
+ *
+ * Routes:
+ *   #/           → home (employee check-in)
+ *   #/dashboard  → manager dashboard
+ *   #/alert/:id  → alert detail (needs alert data, falls back to dashboard)
+ *   #/composer   → team update composer
+ *   #/closures   → review unpublished closures
+ */
 import { useEffect, useState } from 'react'
 import { OfflineBanner } from './components/ErrorStates'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -12,20 +22,27 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import type { Alert } from './types'
 
-type View =
-  | { screen: 'home' }
-  | { screen: 'dashboard' }
-  | { screen: 'alert-detail'; alert: Alert }
-  | { screen: 'composer' }
-  | { screen: 'closures' }
+function navigate(hash: string) {
+  window.location.hash = hash
+}
+
+function useHash(): string {
+  const [hash, setHash] = useState(window.location.hash || '#/')
+  useEffect(() => {
+    const handler = () => setHash(window.location.hash || '#/')
+    window.addEventListener('hashchange', handler)
+    return () => window.removeEventListener('hashchange', handler)
+  }, [])
+  return hash
+}
 
 function Router() {
   const { user, accessToken, loading } = useAuth()
-  const [view, setView] = useState<View>({ screen: 'home' })
+  const hash = useHash()
   const [needsConsent, setNeedsConsent] = useState<boolean | null>(null)
   const [online, setOnline] = useState(navigator.onLine)
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
 
-  // Online/offline listener
   useEffect(() => {
     const on = () => setOnline(true)
     const off = () => setOnline(false)
@@ -34,7 +51,6 @@ function Router() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [])
 
-  // Check consent status after login
   useEffect(() => {
     if (user && accessToken) {
       api.consentStatus()
@@ -46,61 +62,78 @@ function Router() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper">
-        <div className="text-ink-500">Loading…</div>
+        <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
       </div>
     )
   }
 
-  // Not authenticated
   if (!user && !accessToken) {
     return <LoginPage />
   }
 
-  // Needs consent (A3) — skip in dev preview mode
   if (needsConsent === true && !user?.is_dev_mode) {
     return <ConsentPage onAccept={() => setNeedsConsent(false)} />
   }
   if (needsConsent === null && !user?.is_dev_mode) {
-    return <div className="flex min-h-screen items-center justify-center bg-paper"><div className="text-ink-500">Loading…</div></div>
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
+      </div>
+    )
   }
 
   const canSeeDashboard = user?.role === 'manager' || user?.role === 'admin'
+  const route = hash.replace('#', '') || '/'
+
+  const openAlert = (alert: Alert) => {
+    setSelectedAlert(alert)
+    navigate('#/alert/' + alert.alert_id)
+  }
+
+  // Determine which screen to render
+  let screen: React.ReactNode = null
+
+  if (route === '/' || route === '') {
+    screen = <HomePage />
+  } else if (route === '/dashboard' && canSeeDashboard) {
+    screen = (
+      <DashboardPage
+        onOpenAlert={openAlert}
+        onOpenComposer={() => navigate('#/composer')}
+        onOpenClosures={() => navigate('#/closures')}
+      />
+    )
+  } else if (route.startsWith('/alert/') && selectedAlert) {
+    screen = (
+      <AlertDetailPage
+        alert={selectedAlert}
+        onBack={() => navigate('#/dashboard')}
+        onClosed={() => { setSelectedAlert(null); navigate('#/dashboard') }}
+      />
+    )
+  } else if (route === '/composer' && canSeeDashboard) {
+    screen = (
+      <ComposerPage
+        onBack={() => navigate('#/dashboard')}
+        onPublished={() => navigate('#/dashboard')}
+      />
+    )
+  } else if (route === '/closures' && canSeeDashboard) {
+    screen = <ClosuresPage onBack={() => navigate('#/dashboard')} />
+  } else {
+    // Fallback: go home
+    screen = <HomePage />
+  }
 
   return (
     <>
-      {/* View switcher for managers */}
-      {canSeeDashboard && view.screen !== 'alert-detail' && view.screen !== 'composer' && view.screen !== 'closures' && (
+      {canSeeDashboard && (route === '/' || route === '/dashboard') && (
         <ViewSwitcher
-          current={view.screen === 'dashboard' ? 'dashboard' : 'home'}
-          onChange={(v) => setView({ screen: v })}
+          current={route === '/dashboard' ? 'dashboard' : 'home'}
+          onChange={(v) => navigate(v === 'dashboard' ? '#/dashboard' : '#/')}
         />
       )}
-
-      {view.screen === 'home' && <HomePage />}
-      {view.screen === 'dashboard' && canSeeDashboard && (
-        <DashboardPage
-          onOpenAlert={(alert) => setView({ screen: 'alert-detail', alert })}
-          onOpenComposer={() => setView({ screen: 'composer' })}
-          onOpenClosures={() => setView({ screen: 'closures' })}
-        />
-      )}
-      {view.screen === 'alert-detail' && (
-        <AlertDetailPage
-          alert={view.alert}
-          onBack={() => setView({ screen: 'dashboard' })}
-          onClosed={() => setView({ screen: 'dashboard' })}
-        />
-      )}
-      {view.screen === 'composer' && (
-        <ComposerPage
-          onBack={() => setView({ screen: 'dashboard' })}
-          onPublished={() => setView({ screen: 'dashboard' })}
-        />
-      )}
-      {view.screen === 'closures' && (
-        <ClosuresPage onBack={() => setView({ screen: 'dashboard' })} />
-      )}
-
+      {screen}
       {!online && <OfflineBanner />}
     </>
   )
@@ -112,7 +145,7 @@ function ViewSwitcher({ current, onChange }: { current: 'home' | 'dashboard'; on
       <button
         type="button"
         onClick={() => onChange('home')}
-        className={`rounded-pill px-3 py-1 transition ${
+        className={`rounded-pill px-3 py-1 transition focus-visible:shadow-focus outline-none ${
           current === 'home' ? 'bg-surface text-ink-900 shadow-sm' : 'text-ink-500'
         }`}
       >
@@ -121,7 +154,7 @@ function ViewSwitcher({ current, onChange }: { current: 'home' | 'dashboard'; on
       <button
         type="button"
         onClick={() => onChange('dashboard')}
-        className={`rounded-pill px-3 py-1 transition ${
+        className={`rounded-pill px-3 py-1 transition focus-visible:shadow-focus outline-none ${
           current === 'dashboard' ? 'bg-surface text-ink-900 shadow-sm' : 'text-ink-500'
         }`}
       >

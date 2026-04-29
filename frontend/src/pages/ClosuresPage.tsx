@@ -12,7 +12,7 @@ import WBCard from '../components/ui/WBCard'
 import WBSectionLabel from '../components/ui/WBSectionLabel'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
-import { t } from '../lib/i18n'
+import { isRtl, t } from '../lib/i18n'
 import type { Alert } from '../types'
 
 interface Props {
@@ -61,7 +61,7 @@ export default function ClosuresPage({ onBack }: Props) {
   return (
     <div className="min-h-screen bg-paper flex flex-col px-6 py-6 max-w-2xl mx-auto">
       <button type="button" onClick={onBack} className="text-caption text-accent-700 self-start mb-4">
-        ← {t('c1_title')}
+        {isRtl() ? '→' : '←'} {t('c1_title')}
       </button>
 
       <h1 className="text-h1 font-bold text-ink-900">{t('c8_title')}</h1>

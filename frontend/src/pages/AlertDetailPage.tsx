@@ -14,7 +14,7 @@ import WBSectionLabel from '../components/ui/WBSectionLabel'
 import WBStatusPill from '../components/ui/WBStatusPill'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
-import { t } from '../lib/i18n'
+import { isRtl, t } from '../lib/i18n'
 import type { Alert } from '../types'
 
 interface Props {
@@ -182,7 +182,7 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
   return (
     <div className="min-h-screen bg-paper flex flex-col px-6 py-6 overflow-y-auto">
       <button type="button" onClick={onBack} className="text-caption text-accent-700 self-start mb-4">
-        ← {t('c2_cancel')}
+        {isRtl() ? '→' : '←'} {t('c2_cancel')}
       </button>
 
       <div className="flex items-center gap-2 mb-2">
