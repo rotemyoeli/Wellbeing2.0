@@ -10,6 +10,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 
+const DEV_USERS = [
+  { label: 'Employee', role: 'employee' as const },
+  { label: 'Manager', role: 'manager' as const },
+  { label: 'Admin', role: 'admin' as const },
+]
+
 export default function LoginPage() {
   const [step, setStep] = useState<'request' | 'verify'>('request')
   const [email, setEmail] = useState('')
@@ -17,6 +23,18 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
+
+  const handleDevSkip = (role: 'employee' | 'manager' | 'admin') => {
+    const devUser = {
+      user_id: `dev-${role}-${Date.now()}`,
+      display_name: `Dev ${role}`,
+      role,
+      department_id: 'ward-b',
+      is_active: true,
+      is_dev_mode: true,
+    }
+    login('dev-token', 'dev-refresh', devUser)
+  }
 
   const handleRequestOtp = async () => {
     if (!email.includes('@')) {
@@ -51,6 +69,23 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-paper flex flex-col px-6 py-8">
       <WBBrand size="lg" />
+
+      {/* DEV MODE: skip login for UI review */}
+      <div className="mt-6 rounded-lg border-2 border-dashed border-accent-300 bg-accent-50 p-4">
+        <p className="text-caption font-semibold text-accent-700 mb-2">Dev Preview — skip login</p>
+        <div className="flex gap-2">
+          {DEV_USERS.map(u => (
+            <button
+              key={u.role}
+              type="button"
+              onClick={() => handleDevSkip(u.role)}
+              className="flex-1 rounded-md bg-accent-700 text-white text-caption font-medium py-2 px-3"
+            >
+              {u.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {step === 'request' ? (
         <div className="flex flex-col flex-1 mt-10">

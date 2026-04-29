@@ -57,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (accessToken: string, refreshToken: string, user: User) => {
       localStorage.setItem(ACCESS_KEY, accessToken)
       localStorage.setItem(REFRESH_KEY, refreshToken)
+      if (accessToken === 'dev-token') {
+        localStorage.setItem('wellbeing.devUser', JSON.stringify(user))
+      }
       api.setAccessToken(accessToken)
       setState({ user, accessToken, loading: false })
     },
@@ -65,16 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Logout: drop tokens, call backend best-effort. */
   const logout = useCallback(async () => {
-    try {
-      await api.logout()
-    } catch {
-      // Best-effort — even if the backend call fails, drop local state.
+    const isDevMode = state.accessToken === 'dev-token'
+    if (!isDevMode) {
+      try { await api.logout() } catch {}
     }
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
+    localStorage.removeItem('wellbeing.devUser')
     api.setAccessToken(null)
     setState({ user: null, accessToken: null, loading: false })
-  }, [])
+  }, [state.accessToken])
 
   /** Refresh the user profile from /auth/me. */
   const refreshUser = useCallback(async () => {
@@ -91,10 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /** Bootstrap: rehydrate from localStorage, then verify with /auth/me.
-   *  Even without a stored token, we attempt /me — if the backend is in
-   *  DEV_MODE it will return the synthetic admin and skip the login screen. */
+   *  Dev-mode tokens skip the /me call entirely. */
   useEffect(() => {
     const stored = localStorage.getItem(ACCESS_KEY)
+    if (stored === 'dev-token') {
+      // Dev preview mode — no backend call needed
+      const savedUser = localStorage.getItem('wellbeing.devUser')
+      if (savedUser) {
+        setState({ user: JSON.parse(savedUser), accessToken: stored, loading: false })
+      } else {
+        setState({ user: null, accessToken: null, loading: false })
+      }
+      return
+    }
     if (stored) {
       api.setAccessToken(stored)
       setState((s) => ({ ...s, accessToken: stored, loading: true }))

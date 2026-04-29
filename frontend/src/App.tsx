@@ -56,11 +56,11 @@ function Router() {
     return <LoginPage />
   }
 
-  // Needs consent (A3)
-  if (needsConsent === true) {
+  // Needs consent (A3) — skip in dev preview mode
+  if (needsConsent === true && !user?.is_dev_mode) {
     return <ConsentPage onAccept={() => setNeedsConsent(false)} />
   }
-  if (needsConsent === null) {
+  if (needsConsent === null && !user?.is_dev_mode) {
     return <div className="flex min-h-screen items-center justify-center bg-paper"><div className="text-ink-500">Loading…</div></div>
   }
 
