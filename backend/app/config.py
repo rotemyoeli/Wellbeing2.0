@@ -33,7 +33,10 @@ class BaseConfig:
     VERSION: str = "0.1.0"  # overwritten in app factory
 
     # ---- Database -----------------------------------------------------------
-    SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URL", "sqlite:///dev.db")
+    # Railway uses postgres:// but SQLAlchemy 2.x requires postgresql://
+    SQLALCHEMY_DATABASE_URI: str = os.getenv(
+        "DATABASE_URL", "sqlite:///dev.db"
+    ).replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ENGINE_OPTIONS: dict = {
         "pool_pre_ping": True,

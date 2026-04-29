@@ -48,7 +48,7 @@ export interface VerifyOtpResponse {
 }
 
 class WellbeingApiClient {
-  private baseUrl = '/api/v1'
+  private baseUrl = (import.meta.env.VITE_API_URL || '') + '/api/v1'
   private accessToken: string | null = null
 
   setAccessToken(token: string | null): void {
