@@ -23,36 +23,55 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
-    # Add publish tracking columns to alerts
-    op.add_column(
-        "alerts",
-        sa.Column(
-            "team_update_id",
-            sa.String(36),
-            sa.ForeignKey("team_updates.update_id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
-    op.add_column(
-        "alerts",
-        sa.Column(
-            "closure_published",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("0"),
-        ),
-    )
+def _column_exists(table, column):
+    """Check if a column already exists (handles db.create_all() having run first)."""
+    bind = op.get_bind()
+    result = bind.execute(sa.text(f"PRAGMA table_info({table})"))
+    columns = [row[1] for row in result]
+    return column in columns
 
-    # Index for fast unpublished closure queries (C8 screen)
-    op.create_index(
-        "ix_alerts_closure_published",
-        "alerts",
-        ["closure_published", "status"],
-    )
+
+def upgrade():
+    # Idempotent: skip if columns already exist (e.g., from db.create_all())
+    if not _column_exists("alerts", "team_update_id"):
+        op.add_column(
+            "alerts",
+            sa.Column(
+                "team_update_id",
+                sa.String(36),
+                sa.ForeignKey("team_updates.update_id", ondelete="SET NULL"),
+                nullable=True,
+            ),
+        )
+
+    if not _column_exists("alerts", "closure_published"):
+        op.add_column(
+            "alerts",
+            sa.Column(
+                "closure_published",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("0"),
+            ),
+        )
+
+    # Index — use try/except since index may already exist
+    try:
+        op.create_index(
+            "ix_alerts_closure_published",
+            "alerts",
+            ["closure_published", "status"],
+        )
+    except Exception:
+        pass
 
 
 def downgrade():
-    op.drop_index("ix_alerts_closure_published", table_name="alerts")
-    op.drop_column("alerts", "closure_published")
-    op.drop_column("alerts", "team_update_id")
+    try:
+        op.drop_index("ix_alerts_closure_published", table_name="alerts")
+    except Exception:
+        pass
+    if _column_exists("alerts", "closure_published"):
+        op.drop_column("alerts", "closure_published")
+    if _column_exists("alerts", "team_update_id"):
+        op.drop_column("alerts", "team_update_id")
