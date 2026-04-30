@@ -200,7 +200,9 @@ export default function CheckInPage({ onDone }: Props) {
         </div>
 
         <h1 className="text-h2 font-semibold text-ink-900 mt-2">{t('b1_title')}</h1>
-        <p className="text-caption text-ink-400 mt-1">{t('b1_hint')}</p>
+        <p className="text-caption text-ink-400 mt-1">
+          {variant === 'battery' ? t('b1_hint_battery') : variant === 'faces' ? t('b1_hint_faces') : t('b1_hint_orb')}
+        </p>
 
         {/* Selected meter variant — centered */}
         <div className="flex-1 flex items-center justify-center py-2">
