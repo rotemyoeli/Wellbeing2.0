@@ -10,24 +10,26 @@
  *   #/composer   → team update composer
  *   #/closures   → review unpublished closures
  */
-import { useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import ErrorBoundary from './components/ErrorBoundary'
 import { OfflineBanner } from './components/ErrorStates'
 import WBBottomNav, { type TabId } from './components/ui/WBBottomNav'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { api } from './lib/api'
-import AlertDetailPage from './pages/AlertDetailPage'
-import CheckInPage from './pages/CheckInPage'
-import ClosuresPage from './pages/ClosuresPage'
-import ComposerPage from './pages/ComposerPage'
-import ConsentPage from './pages/ConsentPage'
-import DashboardPage from './pages/DashboardPage'
-import HomePage from './pages/HomePage'
-import LoginPage from './pages/LoginPage'
+
+// Lazy-loaded pages (#18) — reduces initial bundle size
+const AlertDetailPage = React.lazy(() => import('./pages/AlertDetailPage'))
+const CheckInPage = React.lazy(() => import('./pages/CheckInPage'))
+const ClosuresPage = React.lazy(() => import('./pages/ClosuresPage'))
+const ComposerPage = React.lazy(() => import('./pages/ComposerPage'))
+const ConsentPage = React.lazy(() => import('./pages/ConsentPage'))
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'))
+const HomePage = React.lazy(() => import('./pages/HomePage'))
+const LoginPage = React.lazy(() => import('./pages/LoginPage'))
 import WBOnboarding from './components/ui/WBOnboarding'
-import SettingsPage from './pages/SettingsPage'
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
 import WBToastContainer from './components/ui/WBToast'
-import UpdatesPage from './pages/UpdatesPage'
+const UpdatesPage = React.lazy(() => import('./pages/UpdatesPage'))
 import type { Alert } from './types'
 
 function navigate(hash: string) {
@@ -90,12 +92,12 @@ function Router() {
 
   // Not authenticated → login
   if (!user && !accessToken) {
-    return <LoginPage />
+    return <Suspense fallback={null}><LoginPage /></Suspense>
   }
 
   // Consent gate
   if (needsConsent === true && !user?.is_dev_mode) {
-    return <ConsentPage onAccept={() => setNeedsConsent(false)} />
+    return <Suspense fallback={null}><ConsentPage onAccept={() => setNeedsConsent(false)} /></Suspense>
   }
   if (needsConsent === null && !user?.is_dev_mode) {
     return (
@@ -176,11 +178,19 @@ function Router() {
 
   const activeTab = routeToTab(route)
 
+  const suspenseFallback = (
+    <div className="flex min-h-app items-center justify-center bg-paper">
+      <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
+    </div>
+  )
+
   return (
     <>
-      <div key={route} className="animate-fadeIn">
-        {screen}
-      </div>
+      <Suspense fallback={suspenseFallback}>
+        <div key={route} className="animate-fadeIn">
+          {screen}
+        </div>
+      </Suspense>
       {!isFullScreenRoute && (
         <WBBottomNav
           current={activeTab}

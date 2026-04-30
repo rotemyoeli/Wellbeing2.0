@@ -267,6 +267,7 @@
   "settings_consented": "Consented",
   "settings_auditLog": "Audit Log",
   "nav_settings": "Settings",
+  "system_msg": "System Message",
   "alert_history": "Alert History",
   "export_dashboard": "Share Dashboard",
   "status_live": "System is live",

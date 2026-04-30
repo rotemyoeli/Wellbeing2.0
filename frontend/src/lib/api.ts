@@ -51,9 +51,32 @@ export interface VerifyOtpResponse {
 class WellbeingApiClient {
   private baseUrl = (import.meta.env.VITE_API_URL || '') + '/api/v1'
   private accessToken: string | null = null
+  private refreshing: Promise<boolean> | null = null
 
   setAccessToken(token: string | null): void {
     this.accessToken = token
+  }
+
+  /** Try to refresh the access token using stored refresh token (#17) */
+  async tryRefresh(): Promise<boolean> {
+    if (this.refreshing) return this.refreshing
+    this.refreshing = (async () => {
+      try {
+        const refreshToken = localStorage.getItem('wellbeing.refreshToken')
+        if (!refreshToken || refreshToken === 'dev-refresh') return false
+        const r = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${refreshToken}` },
+        })
+        if (!r.ok) return false
+        const data = await r.json()
+        this.accessToken = data.accessToken
+        localStorage.setItem('wellbeing.accessToken', data.accessToken)
+        return true
+      } catch { return false }
+      finally { this.refreshing = null }
+    })()
+    return this.refreshing
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
