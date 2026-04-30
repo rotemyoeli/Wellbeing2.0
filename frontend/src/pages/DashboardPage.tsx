@@ -28,6 +28,7 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
   const [openAlerts, setOpenAlerts] = useState<Alert[]>([])
   const [period, setPeriod] = useState(7)
   const [loading, setLoading] = useState(true)
+  const [compareDepts, setCompareDepts] = useState<Record<string, unknown>[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(new Set())
 
@@ -48,6 +49,13 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
   }, [period, user?.department_id])
 
   useEffect(() => { refresh() }, [refresh])
+
+  // Admin: load cross-department comparison
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      api.adminCompareDepts(period).then(r => setCompareDepts(r.departments)).catch(() => {})
+    }
+  }, [user?.role, period])
 
   if (loading) {
     return (
@@ -215,6 +223,52 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
                 <WBSectionLabel>{t('c1_dailyTrend')}</WBSectionLabel>
                 <WBCard padding={0}>
                   <ActivityHeatmap trend={summary.trend} />
+                </WBCard>
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+                SECTION 4.5: DEPARTMENT COMPARISON (admin)
+            ═══════════════════════════════════════════════ */}
+            {compareDepts && compareDepts.length > 1 && (
+              <div className="mb-5">
+                <WBSectionLabel>{t('compare_title')}</WBSectionLabel>
+                <WBCard padding={16}>
+                  <div className="flex flex-col gap-3">
+                    {compareDepts.map((d: Record<string, unknown>) => {
+                      const energy = d.avg_energy as number | null
+                      const rate = d.reporting_rate as number
+                      return (
+                        <div key={d.dept_id as string} className="rounded-xl border border-line p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-caption font-semibold text-ink-900">{d.name as string}</span>
+                            <span className="text-micro text-ink-400">{d.user_count as number} users</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center">
+                              <p className="text-[18px] font-bold text-ink-900">{energy != null ? energy : '—'}</p>
+                              <p className="text-[8px] text-ink-400 uppercase">{t('compare_energy')}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[18px] font-bold text-ink-900">{Math.round(rate * 100)}%</p>
+                              <p className="text-[8px] text-ink-400 uppercase">{t('compare_participation')}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className={`text-[18px] font-bold ${(d.open_alerts as number) > 3 ? 'text-alert-low-fg' : 'text-ink-900'}`}>
+                                {d.open_alerts as number}
+                              </p>
+                              <p className="text-[8px] text-ink-400 uppercase">{t('compare_alerts')}</p>
+                            </div>
+                          </div>
+                          {/* Energy bar */}
+                          <div className="h-1.5 bg-sunken rounded-full mt-2 overflow-hidden">
+                            <div className="h-1.5 rounded-full bg-gradient-to-r from-accent-700 to-teal-500 transition-all duration-500"
+                              style={{ width: `${energy ?? 0}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </WBCard>
               </div>
             )}

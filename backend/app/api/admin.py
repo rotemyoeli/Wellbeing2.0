@@ -347,6 +347,73 @@ def get_audit_log():
     }), 200
 
 
+# ─── Comparative Dashboard ──────────────────────────────────────────────
+
+@admin_bp.get("/compare-departments")
+@role_required("admin")
+def compare_departments():
+    """Cross-department comparison: avg energy, participation, alerts per dept."""
+    import statistics
+    from datetime import timedelta
+
+    period = min(int(request.args.get("period", 30)), 90)
+    now = utcnow()
+    cutoff = now - timedelta(days=period)
+
+    # Get all departments with data
+    from sqlalchemy import func
+    dept_ids = [
+        row[0] for row in
+        db.session.query(CheckIn.department_id)
+        .filter(CheckIn.department_id.isnot(None), CheckIn.created_at >= cutoff)
+        .group_by(CheckIn.department_id)
+        .all()
+    ]
+
+    results = []
+    for dept_id in dept_ids:
+        checkins = db.session.query(CheckIn).filter(
+            CheckIn.department_id == dept_id,
+            CheckIn.created_at >= cutoff,
+        ).all()
+        energies = [c.energy for c in checkins]
+        avg_energy = round(statistics.fmean(energies), 1) if energies else None
+
+        user_count = db.session.query(User).filter(
+            User.department_id == dept_id, User.is_active.is_(True)
+        ).count()
+        reporters = len({c.user_id for c in checkins if c.user_id} | {c.anon_token for c in checkins if c.anon_token})
+        rate = round(reporters / max(user_count, 1), 3)
+
+        open_alerts = db.session.query(Alert).join(
+            CheckIn, Alert.check_in_id == CheckIn.check_in_id
+        ).filter(
+            CheckIn.department_id == dept_id, Alert.status == "open"
+        ).count()
+
+        needs_talk = sum(1 for c in checkins if c.needs_talk)
+
+        # Try to get department name from departments table
+        dept_obj = db.session.query(Department).filter_by(slug=dept_id).first()
+        dept_name = dept_obj.name if dept_obj else dept_id
+
+        results.append({
+            "dept_id": dept_id,
+            "name": dept_name,
+            "avg_energy": avg_energy,
+            "total_checkins": len(checkins),
+            "reporting_rate": rate,
+            "user_count": user_count,
+            "open_alerts": open_alerts,
+            "needs_talk": needs_talk,
+        })
+
+    # Sort by avg_energy ascending (worst first)
+    results.sort(key=lambda d: d["avg_energy"] or 999)
+
+    return jsonify({"departments": results, "period_days": period}), 200
+
+
 # ─── System Info ────────────────────────────────────────────────────────
 
 @admin_bp.get("/system-info")
@@ -412,6 +479,42 @@ def export_data(export_type: str):
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename=wellbeing_{export_type}.csv"},
     )
+
+
+# ─── Weekly Summary ─────────────────────────────────────────────────────
+
+@admin_bp.get("/weekly-summary")
+@role_required("manager", "admin")
+def weekly_summary():
+    """Generate a text summary of the last 7 days for the manager's department."""
+    from app.services.dashboard_service import DashboardService
+
+    user = current_user()
+    dept_id = None
+    if user["role"] == "manager":
+        from app.models.user import User as UserModel
+        db_user = db.session.get(UserModel, user["user_id"])
+        dept_id = db_user.department_id if db_user else None
+
+    data = DashboardService.summary(period_days=7, department_id=dept_id)
+
+    lines = [
+        f"Weekly Summary — {data['period_days']} days",
+        f"Total check-ins: {data['total_checkins']}",
+        f"Average energy: {data['avg_energy']}",
+        f"Participation rate: {round(data['reporting_rate'] * 100)}%",
+        f"Open alerts: {data['open_alerts_count']}",
+        f"Needs talk: {data.get('needs_talk_count', 0)}",
+    ]
+    if data.get('prev_avg_energy') is not None:
+        delta = round((data['avg_energy'] or 0) - data['prev_avg_energy'], 1)
+        lines.append(f"Change vs previous week: {'+' if delta >= 0 else ''}{delta}")
+
+    for rb in data.get('role_breakdown', []):
+        if not rb['below_threshold'] and rb['avg'] is not None:
+            lines.append(f"  {rb['role']}: {rb['avg']}% ({rb['count']} reports)")
+
+    return jsonify({"summary": "\n".join(lines)}), 200
 
 
 # ─── Demo Data Reset ───────────────────────────────────────────────────

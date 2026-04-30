@@ -76,6 +76,19 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
 
       {error && <p className="text-caption text-alert-low-fg mt-4">{error}</p>}
 
+      {/* Schedule selector (idea 12) */}
+      <div className="mt-4">
+        <p className="text-micro text-ink-400 mb-1.5">{t('schedule_publish')}</p>
+        <div className="flex gap-2">
+          <button type="button" className="flex-1 py-1.5 rounded-xl text-micro font-medium bg-accent-700 text-white border border-accent-700 no-tap-highlight">
+            {t('schedule_now')}
+          </button>
+          <button type="button" className="flex-1 py-1.5 rounded-xl text-micro font-medium bg-surface text-ink-500 border border-line no-tap-highlight opacity-50" disabled>
+            {t('schedule_tomorrow')}
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1" />
 
       <div className="flex gap-2 mt-6">

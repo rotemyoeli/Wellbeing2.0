@@ -309,4 +309,26 @@ class DashboardService:
                     "severity": "warning",
                 })
 
+        # Idea 23: Seasonality detection — identify worst day of week
+        if len(trend) >= 7:
+            from collections import defaultdict
+            from datetime import datetime as dt
+            day_avgs: dict[int, list[float]] = defaultdict(list)
+            for d in trend:
+                if d.get("avg") is not None:
+                    dow = dt.strptime(d["date"], "%Y-%m-%d").weekday()
+                    day_avgs[dow].append(d["avg"])
+            if day_avgs:
+                dow_means = {dow: sum(vals)/len(vals) for dow, vals in day_avgs.items() if len(vals) >= 2}
+                if dow_means:
+                    worst_dow = min(dow_means, key=lambda d: dow_means[d])
+                    best_dow = max(dow_means, key=lambda d: dow_means[d])
+                    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    if dow_means[best_dow] - dow_means[worst_dow] > 8:
+                        nudges.append({
+                            "type": "seasonality",
+                            "message": f"Energy tends to be lowest on {day_names[worst_dow]}s ({dow_means[worst_dow]:.0f}) and highest on {day_names[best_dow]}s ({dow_means[best_dow]:.0f}).",
+                            "severity": "info",
+                        })
+
         return nudges

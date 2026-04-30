@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import WBButton from '../components/ui/WBButton'
 import WBDarkModeToggle from '../components/ui/WBDarkModeToggle'
 import WBInstallPrompt from '../components/ui/WBInstallPrompt'
+import WBNotifPrompt from '../components/ui/WBNotifPrompt'
 import WBPage from '../components/ui/WBPage'
 import WBReactionBar from '../components/ui/WBReactionBar'
 import WBTopBar from '../components/ui/WBTopBar'
@@ -80,6 +81,7 @@ export default function HomePage({ onStartCheckIn }: Props) {
 
       <div className="px-5 pt-3 pb-4">
         <WBInstallPrompt />
+        <WBNotifPrompt />
 
         {/* ═══════════════════════════════════════
             SECTION 1: VISUAL HERO
@@ -162,6 +164,40 @@ export default function HomePage({ onStartCheckIn }: Props) {
             accent
           />
         </div>
+
+        {/* Response loop visualization (ideas 14+15) */}
+        {updates.length > 0 && (
+          <div className="rounded-xl bg-gradient-to-br from-teal-100/40 to-surface border border-teal-300/50 p-4 mb-4">
+            <p className="text-micro text-teal-700 font-semibold uppercase tracking-widest mb-3">{t('loop_title')}</p>
+            <div className="flex items-center gap-0">
+              {/* Step 1: Reports */}
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 mx-auto rounded-full bg-accent-700 flex items-center justify-center mb-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                </div>
+                <p className="text-[9px] text-ink-500">{t('loop_reported')}</p>
+              </div>
+              {/* Arrow */}
+              <div className="w-6 h-0.5 bg-teal-300 shrink-0" />
+              {/* Step 2: Manager responded */}
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 mx-auto rounded-full bg-teal-500 flex items-center justify-center mb-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                </div>
+                <p className="text-[9px] text-ink-500">{t('loop_responded')}</p>
+              </div>
+              {/* Arrow */}
+              <div className="w-6 h-0.5 bg-teal-300 shrink-0" />
+              {/* Step 3: Team felt change */}
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 mx-auto rounded-full bg-teal-700 flex items-center justify-center mb-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+                <p className="text-[9px] text-ink-500">{t('loop_felt')}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Personal history (idea 6) — compact energy timeline */}
         {myCheckins.length > 2 && (

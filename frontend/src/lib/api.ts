@@ -360,6 +360,12 @@ class WellbeingApiClient {
     return r.json()
   }
 
+  async adminCompareDepts(period = 30): Promise<{ departments: Record<string, unknown>[]; period_days: number }> {
+    const r = await fetch(`${this.baseUrl}/admin/compare-departments?period=${period}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
   adminExportUrl(type: 'users' | 'checkins' | 'alerts'): string {
     return `${this.baseUrl}/admin/export/${type}`
   }
