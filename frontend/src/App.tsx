@@ -1,8 +1,10 @@
 /**
- * App router — Phase 6A: privacy scoping, mobile UX hotfix.
+ * App router — Phase 6B: Mobile app shell with bottom navigation.
  *
  * Routes:
- *   #/           → home (employee check-in)
+ *   #/           → home (employee greeting + hero CTA + updates preview)
+ *   #/checkin    → check-in flow (battery/orb/faces → followup → comment → thanks)
+ *   #/updates    → team updates feed
  *   #/dashboard  → manager dashboard
  *   #/alert/:id  → alert detail (fetches from API by ID)
  *   #/composer   → team update composer
@@ -10,16 +12,18 @@
  */
 import { useEffect, useState } from 'react'
 import { OfflineBanner } from './components/ErrorStates'
+import WBBottomNav, { type TabId } from './components/ui/WBBottomNav'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { api } from './lib/api'
-import { t } from './lib/i18n'
 import AlertDetailPage from './pages/AlertDetailPage'
+import CheckInPage from './pages/CheckInPage'
 import ClosuresPage from './pages/ClosuresPage'
 import ComposerPage from './pages/ComposerPage'
 import ConsentPage from './pages/ConsentPage'
 import DashboardPage from './pages/DashboardPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import UpdatesPage from './pages/UpdatesPage'
 import type { Alert } from './types'
 
 function navigate(hash: string) {
@@ -34,6 +38,14 @@ function useHash(): string {
     return () => window.removeEventListener('hashchange', handler)
   }, [])
   return hash
+}
+
+/** Map route to active tab. Sub-routes inherit parent tab. */
+function routeToTab(route: string): TabId {
+  if (route === '/checkin') return 'checkin'
+  if (route === '/updates') return 'updates'
+  if (route === '/dashboard' || route.startsWith('/alert/') || route === '/composer' || route === '/closures') return 'manage'
+  return 'home'
 }
 
 function Router() {
@@ -59,24 +71,27 @@ function Router() {
     }
   }, [user, accessToken])
 
+  // Loading spinner (before auth resolved)
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper">
+      <div className="flex min-h-app items-center justify-center bg-paper">
         <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
       </div>
     )
   }
 
+  // Not authenticated → login
   if (!user && !accessToken) {
     return <LoginPage />
   }
 
+  // Consent gate
   if (needsConsent === true && !user?.is_dev_mode) {
     return <ConsentPage onAccept={() => setNeedsConsent(false)} />
   }
   if (needsConsent === null && !user?.is_dev_mode) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper">
+      <div className="flex min-h-app items-center justify-center bg-paper">
         <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
       </div>
     )
@@ -90,15 +105,20 @@ function Router() {
     navigate('#/alert/' + alert.alert_id)
   }
 
-  // Durable alert detail route: if route matches but no alert in memory,
-  // extract the ID and let AlertDetailPage fetch it from the API.
   const alertIdFromRoute = route.startsWith('/alert/') ? route.replace('/alert/', '') : null
+
+  // Pages that have their own full-screen layout (no bottom nav)
+  const isFullScreenRoute = route === '/checkin'
 
   // Determine which screen to render
   let screen: React.ReactNode = null
 
   if (route === '/' || route === '') {
-    screen = <HomePage />
+    screen = <HomePage onStartCheckIn={() => navigate('#/checkin')} />
+  } else if (route === '/checkin') {
+    screen = <CheckInPage onDone={() => navigate('#/')} />
+  } else if (route === '/updates') {
+    screen = <UpdatesPage />
   } else if (route === '/dashboard' && canSeeDashboard) {
     screen = (
       <DashboardPage
@@ -126,49 +146,32 @@ function Router() {
   } else if (route === '/closures' && canSeeDashboard) {
     screen = <ClosuresPage onBack={() => navigate('#/dashboard')} />
   } else {
-    // Fallback: go home
-    screen = <HomePage />
+    screen = <HomePage onStartCheckIn={() => navigate('#/checkin')} />
   }
+
+  const handleTabNavigate = (tab: TabId) => {
+    switch (tab) {
+      case 'home': navigate('#/'); break
+      case 'checkin': navigate('#/checkin'); break
+      case 'updates': navigate('#/updates'); break
+      case 'manage': navigate('#/dashboard'); break
+    }
+  }
+
+  const activeTab = routeToTab(route)
 
   return (
     <>
-      {canSeeDashboard && (route === '/' || route === '/dashboard') && (
-        <ViewSwitcher
-          current={route === '/dashboard' ? 'dashboard' : 'home'}
-          onChange={(v) => navigate(v === 'dashboard' ? '#/dashboard' : '#/')}
+      {screen}
+      {!isFullScreenRoute && (
+        <WBBottomNav
+          current={activeTab}
+          onNavigate={handleTabNavigate}
+          userRole={user?.role}
         />
       )}
-      {screen}
       {!online && <OfflineBanner />}
     </>
-  )
-}
-
-function ViewSwitcher({ current, onChange }: { current: 'home' | 'dashboard'; onChange: (v: 'home' | 'dashboard') => void }) {
-  return (
-    <nav
-      className="fixed left-1/2 z-20 -translate-x-1/2 flex gap-0.5 rounded-pill bg-surface/95 backdrop-blur-sm border border-line p-1 shadow-sm"
-      style={{ top: 'max(env(safe-area-inset-top, 8px), 8px)' }}
-    >
-      <button
-        type="button"
-        onClick={() => onChange('home')}
-        className={`rounded-pill px-4 py-1.5 text-caption font-medium transition-colors focus-visible:shadow-focus outline-none ${
-          current === 'home' ? 'bg-accent-700 text-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
-        }`}
-      >
-        {t('nav_checkIn')}
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('dashboard')}
-        className={`rounded-pill px-4 py-1.5 text-caption font-medium transition-colors focus-visible:shadow-focus outline-none ${
-          current === 'dashboard' ? 'bg-accent-700 text-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
-        }`}
-      >
-        {t('nav_dashboard')}
-      </button>
-    </nav>
   )
 }
 

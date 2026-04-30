@@ -144,9 +144,38 @@
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+  /* Safe-area utilities */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   .pb-safe {
     padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
   }
+  /* Content area that accounts for bottom nav (56px + safe area) */
+  .pb-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 16px) + 8px);
+  }
+  /* Full-height app viewport */
+  .min-h-app {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+  /* Skeleton shimmer animation */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--wb-sunken) 0%,
+      var(--wb-surface) 40%,
+      var(--wb-sunken) 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @keyframes spin {
