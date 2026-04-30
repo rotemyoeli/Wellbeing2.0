@@ -187,6 +187,22 @@ class DashboardService:
         # --- Needs-talk count (anonymous help requests) -------------------------
         needs_talk_count = sum(1 for r in rows if r.needs_talk)
 
+        # --- Previous period comparison --------------------------------------
+        prev_cutoff = cutoff - timedelta(days=period_days)
+        prev_q = db.session.query(CheckIn).filter(
+            CheckIn.created_at >= prev_cutoff,
+            CheckIn.created_at < cutoff,
+        )
+        if department_id:
+            prev_q = prev_q.filter(CheckIn.department_id == department_id)
+        prev_rows = prev_q.all()
+        prev_energies = [r.energy for r in prev_rows]
+        prev_avg = round(statistics.fmean(prev_energies), 1) if prev_energies else None
+        prev_identified = {r.user_id for r in prev_rows if r.user_id}
+        prev_anon = {r.anon_token for r in prev_rows if r.anon_token}
+        prev_reporters = len(prev_identified) + len(prev_anon)
+        prev_rate = round(prev_reporters / active_count, 3) if active_count else 0.0
+
         return {
             "period_days": period_days,
             "total_checkins": total,
@@ -203,6 +219,9 @@ class DashboardService:
             "total_published_closures": total_published,
             "open_alerts_count": open_alerts_count,
             "needs_talk_count": needs_talk_count,
+            "prev_avg_energy": prev_avg,
+            "prev_reporting_rate": prev_rate,
+            "prev_total_checkins": len(prev_rows),
             "nudges": nudges,
         }
 

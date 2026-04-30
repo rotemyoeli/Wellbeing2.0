@@ -81,6 +81,9 @@ export interface DashboardSummary {
   total_published_closures: number
   open_alerts_count: number
   needs_talk_count?: number
+  prev_avg_energy?: number | null
+  prev_reporting_rate?: number
+  prev_total_checkins?: number
   nudges: DashboardNudge[]
 }
 

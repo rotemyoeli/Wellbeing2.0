@@ -9,9 +9,11 @@
  */
 import { useEffect, useState } from 'react'
 import WBButton from '../components/ui/WBButton'
+import WBInstallPrompt from '../components/ui/WBInstallPrompt'
 import WBPage from '../components/ui/WBPage'
 import WBReactionBar from '../components/ui/WBReactionBar'
 import WBTopBar from '../components/ui/WBTopBar'
+import WBTransparencySheet from '../components/ui/WBTransparencySheet'
 import WBTrustHint from '../components/ui/WBTrustHint'
 import WBSkeletonCard from '../components/ui/WBSkeletonCard'
 import { useAuth } from '../contexts/AuthContext'
@@ -29,6 +31,7 @@ export default function HomePage({ onStartCheckIn }: Props) {
   const [updatesLoading, setUpdatesLoading] = useState(true)
   const [myCheckins, setMyCheckins] = useState<CheckInListItem[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
+  const [showTransparency, setShowTransparency] = useState(false)
 
   useEffect(() => {
     api.listMyCheckIns()
@@ -74,6 +77,8 @@ export default function HomePage({ onStartCheckIn }: Props) {
       />
 
       <div className="px-5 pt-3 pb-4">
+        <WBInstallPrompt />
+
         {/* ═══════════════════════════════════════
             SECTION 1: VISUAL HERO
         ═══════════════════════════════════════ */}
@@ -156,8 +161,11 @@ export default function HomePage({ onStartCheckIn }: Props) {
           />
         </div>
 
-        {/* Trust chip */}
-        <WBTrustHint text={t('home_trustHint')} />
+        {/* Trust chip — tappable to open transparency sheet */}
+        <button type="button" onClick={() => setShowTransparency(true)} className="w-full text-start no-tap-highlight">
+          <WBTrustHint text={t('home_trustHint')} />
+        </button>
+        <WBTransparencySheet open={showTransparency} onClose={() => setShowTransparency(false)} />
 
         {/* ═══════════════════════════════════════
             SECTION 3: TEAM UPDATES

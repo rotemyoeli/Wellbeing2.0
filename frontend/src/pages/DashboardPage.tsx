@@ -127,7 +127,7 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
             <div className="rounded-2xl bg-gradient-to-br from-accent-900 via-accent-700 to-accent-500 p-5 mb-5 shadow-lg">
               <div className="flex items-center gap-5">
                 {/* Large energy gauge */}
-                <EnergyGauge value={summary.avg_energy} median={summary.median_energy} />
+                <EnergyGauge value={summary.avg_energy} median={summary.median_energy} prevAvg={summary.prev_avg_energy} />
                 {/* Mini ring KPIs */}
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <MiniRing
@@ -251,7 +251,7 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
 ═══════════════════════════════════════════════════════════════════════ */
 
 /** Large circular energy gauge with gradient arc */
-function EnergyGauge({ value, median }: { value: number | null; median: number | null }) {
+function EnergyGauge({ value, median, prevAvg }: { value: number | null; median: number | null; prevAvg?: number | null }) {
   const v = value ?? 0
   const r = 52
   const circ = 2 * Math.PI * r
@@ -285,11 +285,17 @@ function EnergyGauge({ value, median }: { value: number | null; median: number |
           {t('c1_energyGauge')}
         </text>
       </svg>
-      {median != null && (
-        <p className="text-[10px] text-white/50 mt-1">
-          {t('c1_medianLabel')}: {Math.round(median)}
-        </p>
-      )}
+      {/* Comparison + median */}
+      <div className="flex items-center gap-2 mt-1">
+        {prevAvg != null && value != null && (
+          <span className={`text-[10px] font-semibold ${value >= prevAvg ? 'text-teal-300' : 'text-[#E8A0BC]'}`}>
+            {value >= prevAvg ? '▲' : '▼'} {Math.abs(Math.round(value - prevAvg))}
+          </span>
+        )}
+        {median != null && (
+          <span className="text-[10px] text-white/40">{t('c1_medianLabel')}: {Math.round(median)}</span>
+        )}
+      </div>
     </div>
   )
 }
