@@ -95,6 +95,15 @@ class WellbeingApiClient {
     return r.json()
   }
 
+  async demoLogin(userId: string): Promise<VerifyOtpResponse> {
+    const r = await fetch(`${this.baseUrl}/auth/demo-login`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ userId }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
   async logout(): Promise<void> {
     if (!this.accessToken) return
     await fetch(`${this.baseUrl}/auth/logout`, { method: 'POST', headers: this.headers() })

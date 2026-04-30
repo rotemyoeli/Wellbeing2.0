@@ -61,11 +61,20 @@ def _resolve_from_jwt() -> dict | None:
 
 
 def _resolve_current_user() -> dict | None:
-    """Resolve the user behind this request, or None if unauthenticated."""
+    """Resolve the user behind this request, or None if unauthenticated.
+
+    In DEV_MODE: try real JWT first (so demo-login JWTs work), then
+    fall back to the synthetic admin user. This allows demo users with
+    real department_ids to function correctly while keeping the DEV_MODE
+    backdoor for requests without a JWT.
+    """
+    jwt_user = _resolve_from_jwt()
+    if jwt_user is not None:
+        return jwt_user
     if is_dev_mode_active(current_app):
-        # DEV MODE BACKDOOR — every request is an admin.
+        # DEV MODE BACKDOOR — fallback to synthetic admin.
         return dev_mode_user_payload()
-    return _resolve_from_jwt()
+    return None
 
 
 def auth_required(fn: Callable) -> Callable:

@@ -1,5 +1,9 @@
 /**
- * Auth screens: A1 (request OTP), A2 (verify OTP).
+ * Auth screens: A1 (request OTP), A2 (verify OTP), demo login.
+ *
+ * Phase 6X: Demo login buttons call /auth/demo-login to get real JWTs
+ * for seeded demo users. This replaces the old dev-token approach that
+ * didn't work with the backend (fake user IDs, no department_id, etc.)
  */
 import { useState } from 'react'
 import WBBrand from '../components/ui/WBBrand'
@@ -10,10 +14,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 
-const DEV_USERS = [
-  { label: 'Employee', role: 'employee' as const },
-  { label: 'Manager', role: 'manager' as const },
-  { label: 'Admin', role: 'admin' as const },
+const DEMO_USERS = [
+  { userId: 'demo-superadmin', label: 'מנהל-על', labelEn: 'Super Admin', accent: true },
+  { userId: 'demo-mgr-internal-a', label: 'מנהל/ת פנימית', labelEn: 'Mgr Internal' },
+  { userId: 'demo-mgr-er', label: 'מנהל/ת מיון', labelEn: 'Mgr ER' },
+  { userId: 'demo-internal-a-00', label: 'אח/ות פנימית', labelEn: 'Employee' },
+  { userId: 'demo-er-00', label: 'אח/ות מיון', labelEn: 'Employee ER' },
 ]
 
 export default function LoginPage() {
@@ -22,18 +28,20 @@ export default function LoginPage() {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState<string | null>(null)
   const { login } = useAuth()
 
-  const handleDevSkip = (role: 'employee' | 'manager' | 'admin') => {
-    const devUser = {
-      user_id: `dev-${role}-${Date.now()}`,
-      display_name: `Dev ${role}`,
-      role,
-      department_id: 'ward-b',
-      is_active: true,
-      is_dev_mode: true,
+  const handleDemoLogin = async (userId: string) => {
+    setDemoLoading(userId)
+    setError('')
+    try {
+      const res = await api.demoLogin(userId)
+      login(res.accessToken, res.refreshToken, res.user)
+    } catch {
+      setError(t('a1_errNet'))
+    } finally {
+      setDemoLoading(null)
     }
-    login('dev-token', 'dev-refresh', devUser)
   }
 
   const handleRequestOtp = async () => {
@@ -67,24 +75,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col px-6 py-8">
+    <div className="min-h-app bg-paper flex flex-col px-6 py-8">
       <WBBrand size="lg" />
 
-      {/* DEV MODE: skip login for UI review */}
-      <div className="mt-6 rounded-lg border-2 border-dashed border-accent-300 bg-accent-50 p-4">
-        <p className="text-caption font-semibold text-accent-700 mb-2">Dev Preview — skip login</p>
-        <div className="flex gap-2">
-          {DEV_USERS.map(u => (
+      {/* DEMO LOGIN: uses real JWT via /auth/demo-login */}
+      <div className="mt-6 rounded-xl border-2 border-dashed border-accent-300 bg-accent-50 p-4">
+        <p className="text-caption font-semibold text-accent-700 mb-3">{t('devMode')} — demo users</p>
+        <div className="flex flex-wrap gap-2">
+          {DEMO_USERS.map(u => (
             <button
-              key={u.role}
+              key={u.userId}
               type="button"
-              onClick={() => handleDevSkip(u.role)}
-              className="flex-1 rounded-md bg-accent-700 text-white text-caption font-medium py-2 px-3"
+              disabled={demoLoading !== null}
+              onClick={() => handleDemoLogin(u.userId)}
+              className={`
+                rounded-pill text-caption font-medium py-2 px-3 transition
+                ${u.accent
+                  ? 'bg-accent-700 text-white'
+                  : 'bg-surface text-ink-700 border border-line'
+                }
+                disabled:opacity-50
+              `}
             >
-              {u.label}
+              {demoLoading === u.userId ? '...' : u.label}
             </button>
           ))}
         </div>
+        {error && <p className="text-caption text-alert-low-fg mt-2">{error}</p>}
       </div>
 
       {step === 'request' ? (

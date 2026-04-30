@@ -157,18 +157,88 @@ def logout():
     return "", 204
 
 
+@auth_bp.post("/demo-login")
+def demo_login():
+    """
+    Demo/dev login — issues a real JWT for a seeded demo user without OTP.
+
+    Only available when DEV_MODE_ENABLED is True. Controlled by env var
+    WELLBEING_DEV_MODE=true.
+
+    Body: { "userId": "demo-superadmin" }
+       or { "email": "superadmin@demo.local" }
+    Returns: 200 { accessToken, refreshToken, user }
+    """
+    if not current_app.config.get("DEV_MODE_ENABLED"):
+        return jsonify(
+            {"error": {"code": "FORBIDDEN", "message": "Demo login is disabled"}}
+        ), 403
+
+    from app.extensions import db as _db
+    from app.models.user import User
+
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("userId")
+    email = payload.get("email")
+
+    user = None
+    if user_id:
+        user = _db.session.get(User, user_id)
+    elif email:
+        user = _db.session.query(User).filter_by(contact_email=email).first()
+
+    if not user or not user.is_active:
+        return jsonify(
+            {"error": {"code": "NOT_FOUND", "message": "Demo user not found"}}
+        ), 404
+
+    access_token = create_access_token(
+        identity=user.user_id,
+        additional_claims={"user_id": user.user_id, "role": user.role},
+    )
+    from flask_jwt_extended import create_refresh_token
+    refresh_token = create_refresh_token(
+        identity=user.user_id,
+        additional_claims={"user_id": user.user_id, "role": user.role},
+    )
+
+    AuditService.write(
+        actor_id=user.user_id,
+        action="auth.demo_login",
+        entity_type="user",
+        entity_id=user.user_id,
+        meta={"method": "demo_login"},
+    )
+
+    # Return user dict with department_id included
+    user_dict = user.to_dict()
+    user_dict["is_dev_mode"] = True
+
+    return jsonify({
+        "accessToken": access_token,
+        "refreshToken": refresh_token,
+        "user": user_dict,
+    }), 200
+
+
 @auth_bp.get("/me")
 @auth_required
 def me():
-    """Return the current user's profile."""
+    """Return the current user's profile, including department_id from DB."""
     user = current_user()
-    # current_user() returns a dict-shaped payload; expand to a stable response.
+    # Enrich with department_id from DB (the g.current_user dict may not have it)
+    from app.extensions import db as _db
+    from app.models.user import User
+    db_user = _db.session.get(User, user["user_id"])
+    dept_id = db_user.department_id if db_user else None
+
     return jsonify(
         {
             "user": {
                 "user_id": user["user_id"],
                 "role": user.get("role"),
                 "display_name": user.get("display_name"),
+                "department_id": dept_id,
                 "is_dev_mode": user.get("is_dev_mode", False),
             }
         }
