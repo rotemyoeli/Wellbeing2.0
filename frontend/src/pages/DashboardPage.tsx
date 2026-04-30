@@ -308,36 +308,40 @@ function MiniRing({ value, max = 100, label, sub, color, invert }: {
   )
 }
 
-/** Area chart with gradient fill and energy line */
+/** Area chart with gradient fill and energy line — responsive to any data length */
 function EnergyTrendChart({ trend }: { trend: { date: string; count: number; avg: number | null }[] }) {
   if (trend.length < 2) return null
 
-  const w = 600
+  // For large datasets, ensure the SVG is wide enough to not crush points.
+  // Min 8px per data point, at least 320px wide.
+  const minW = Math.max(520, trend.length * 8)
+  const w = minW
   const h = 160
-  const padX = 40
+  const padX = 36
   const padTop = 16
   const padBot = 28
   const chartW = w - padX * 2
   const chartH = h - padTop - padBot
 
-  // Build points for energy avg line
   const points = trend.map((p, i) => {
     const x = padX + (i / (trend.length - 1)) * chartW
     const y = padTop + chartH - ((p.avg ?? 50) / 100) * chartH
     return { x, y, ...p }
   })
 
-  // SVG path for the line
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
-  // Area fill path
   const areaPath = `${linePath} L${points[points.length - 1].x},${padTop + chartH} L${points[0].x},${padTop + chartH} Z`
 
-  // Count bars (subtle)
-  const maxCount = Math.max(...trend.map(d => d.count), 1)
+  // Show data point dots only when there aren't too many
+  const showDots = trend.length <= 31
+
+  // Date labels: show ~7 labels evenly spaced
+  const labelStep = Math.max(1, Math.floor(trend.length / 7))
 
   return (
-    <div className="px-2 pt-3 pb-1">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none" style={{ height: 180 }}>
+    <div className="overflow-x-auto pt-3 pb-1 px-1">
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet"
+        style={{ width: Math.max(w, 320), height: 180, minWidth: '100%' }}>
         <defs>
           <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--wb-accent-500)" stopOpacity="0.25" />
@@ -354,25 +358,16 @@ function EnergyTrendChart({ trend }: { trend: { date: string; count: number; avg
             </g>
           )
         })}
-        {/* Count bars (background) */}
-        {trend.map((p, i) => {
-          const x = padX + (i / (trend.length - 1)) * chartW
-          const barH = (p.count / maxCount) * chartH * 0.3
-          return (
-            <rect key={`bar-${i}`} x={x - 4} y={padTop + chartH - barH} width={8} height={barH}
-              rx={2} fill="var(--wb-teal-500)" opacity={0.12} />
-          )
-        })}
         {/* Area fill */}
         <path d={areaPath} fill="url(#areaFill)" />
         {/* Energy line */}
-        <path d={linePath} fill="none" stroke="var(--wb-accent-700)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        {/* Data points */}
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--wb-surface)" stroke="var(--wb-accent-700)" strokeWidth="2" />
+        <path d={linePath} fill="none" stroke="var(--wb-accent-700)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Data points (only for <= 31 days) */}
+        {showDots && points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--wb-surface)" stroke="var(--wb-accent-700)" strokeWidth="1.5" />
         ))}
         {/* Date labels */}
-        {points.filter((_, i) => i % Math.max(1, Math.floor(trend.length / 7)) === 0 || i === points.length - 1).map((p, i) => (
+        {points.filter((_, i) => i % labelStep === 0 || i === points.length - 1).map((p, i) => (
           <text key={`dt-${i}`} x={p.x} y={h - 4} textAnchor="middle" fill="var(--wb-ink-400)" style={{ fontSize: 9 }}>
             {p.date.slice(5)}
           </text>
@@ -413,33 +408,36 @@ function RoleBar({ row, max, threshold }: { row: { role: string; count: number; 
   )
 }
 
-/** Daily activity heatmap — shows check-in volume as colored cells */
+/** Daily activity heatmap — wrapping grid that handles any number of days */
 function ActivityHeatmap({ trend }: { trend: { date: string; count: number; avg: number | null }[] }) {
   const maxCount = Math.max(...trend.map(d => d.count), 1)
 
+  // For large datasets (30+ days), use a wrapping grid of fixed-size cells.
+  // For small datasets (<= 14 days), use flex row.
+  const useGrid = trend.length > 14
+
   return (
     <div className="px-4 py-4">
-      <div className="flex gap-[3px] items-end" style={{ minHeight: 48 }}>
+      <div className={useGrid
+        ? 'grid gap-[3px]'
+        : 'flex gap-[3px] items-end'
+      } style={useGrid ? { gridTemplateColumns: 'repeat(auto-fill, minmax(28px, 1fr))' } : { minHeight: 48 }}>
         {trend.map(p => {
           const intensity = p.count / maxCount
           const alpha = 0.1 + intensity * 0.9
           return (
-            <div key={p.date} className="flex-1 group relative">
-              {/* Tooltip */}
+            <div key={p.date} className={`${useGrid ? '' : 'flex-1'} group relative`}>
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition
-                text-micro text-ink-700 bg-surface rounded-md px-2 py-0.5 shadow-md whitespace-nowrap z-10 border border-line">
-                {p.avg != null ? `${p.avg}%` : '—'} · {p.count} {t('c1_kpiCheckIns').toLowerCase()}
+                text-micro text-ink-700 bg-surface rounded-md px-2 py-0.5 shadow-md whitespace-nowrap z-10 border border-line pointer-events-none">
+                {p.avg != null ? `${p.avg}%` : '—'} · {p.count}
               </div>
               <div
                 className="w-full rounded-sm transition-all duration-300"
                 style={{
-                  height: 32,
+                  height: useGrid ? 28 : 32,
                   backgroundColor: `rgba(61, 182, 168, ${alpha})`,
                 }}
               />
-              <p className="text-center text-[8px] text-ink-400 mt-1 truncate">
-                {p.date.slice(8)}
-              </p>
             </div>
           )
         })}
