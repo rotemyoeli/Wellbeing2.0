@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react'
 import WBButton from '../components/ui/WBButton'
 import WBPage from '../components/ui/WBPage'
+import WBReactionBar from '../components/ui/WBReactionBar'
 import WBTopBar from '../components/ui/WBTopBar'
 import WBTrustHint from '../components/ui/WBTrustHint'
 import WBSkeletonCard from '../components/ui/WBSkeletonCard'
@@ -366,6 +367,7 @@ function UpdateRow({ update, isLatest, isLast }: { update: TeamUpdate; isLatest:
         )}
       </div>
       <p className="text-[14px] text-ink-700 leading-relaxed">{update.content}</p>
+      <WBReactionBar updateId={update.update_id} />
     </div>
   )
 }

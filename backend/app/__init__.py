@@ -65,6 +65,7 @@ def create_app(config_name: str | None = None) -> Flask:
         policy,
         shift,
         team_update,
+        update_reaction,
         user,
     )
 

@@ -248,6 +248,20 @@ class WellbeingApiClient {
     return r.json()
   }
 
+  async reactToUpdate(updateId: string, feltIt: boolean): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/team-updates/${updateId}/react`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ feltIt }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+  }
+
+  async getUpdateReactions(updateId: string): Promise<{ felt_it: number; not_yet: number; total: number }> {
+    const r = await fetch(`${this.baseUrl}/team-updates/${updateId}/reactions`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
   async deleteTeamUpdate(updateId: string): Promise<void> {
     const r = await fetch(`${this.baseUrl}/team-updates/${updateId}`, {
       method: 'DELETE', headers: this.headers(),

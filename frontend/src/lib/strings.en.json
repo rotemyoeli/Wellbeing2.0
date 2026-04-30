@@ -264,6 +264,8 @@
   "settings_consented": "Consented",
   "settings_auditLog": "Audit Log",
   "nav_settings": "Settings",
+  "reaction_feltIt": "Felt the change",
+  "reaction_notYet": "Not yet",
   "needsTalk": "I need a conversation",
   "needsTalkHint": "Anonymous request. Your manager will know someone on the team needs support — without knowing who.",
   "needsTalkSent": "Request sent anonymously",

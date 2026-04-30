@@ -204,3 +204,68 @@ def delete_update(update_id: str):
     db.session.commit()
 
     return "", 204
+
+
+@team_updates_bp.post("/<update_id>/react")
+@auth_required
+def react_to_update(update_id: str):
+    """
+    Anonymous reaction to a team update.
+    Body: { "feltIt": true|false }
+
+    Uses a hash of user_id + update_id to prevent duplicates while
+    keeping the reaction anonymous.
+    """
+    import hashlib
+    from app.models.update_reaction import UpdateReaction
+
+    update = TeamUpdateService.get(update_id)
+    if update is None or not update.is_active:
+        return jsonify(
+            {"error": {"code": "NOT_FOUND", "message": "Update not found"}}
+        ), 404
+
+    payload = request.get_json(silent=True) or {}
+    felt_it = payload.get("feltIt")
+    if felt_it is None or not isinstance(felt_it, bool):
+        return jsonify(
+            {"error": {"code": "VALIDATION_ERROR", "message": "feltIt (boolean) is required"}}
+        ), 400
+
+    user = current_user()
+    # Anonymous hash: prevents duplicates without revealing identity
+    anon_hash = hashlib.blake2b(
+        f"{user['user_id']}|{update_id}".encode(), digest_size=32
+    ).hexdigest()
+
+    existing = db.session.query(UpdateReaction).filter_by(
+        update_id=update_id, anon_hash=anon_hash
+    ).first()
+
+    if existing:
+        existing.felt_it = felt_it
+    else:
+        db.session.add(UpdateReaction(
+            update_id=update_id, anon_hash=anon_hash, felt_it=felt_it
+        ))
+
+    db.session.commit()
+    return jsonify({"status": "ok", "feltIt": felt_it}), 200
+
+
+@team_updates_bp.get("/<update_id>/reactions")
+@auth_required
+def get_reactions(update_id: str):
+    """Get aggregate reaction counts for a team update."""
+    from app.models.update_reaction import UpdateReaction
+
+    reactions = db.session.query(UpdateReaction).filter_by(update_id=update_id).all()
+    felt = sum(1 for r in reactions if r.felt_it)
+    not_yet = sum(1 for r in reactions if not r.felt_it)
+
+    return jsonify({
+        "update_id": update_id,
+        "felt_it": felt,
+        "not_yet": not_yet,
+        "total": len(reactions),
+    }), 200

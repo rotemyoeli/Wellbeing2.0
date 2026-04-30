@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react'
 import WBEmptyState from '../components/ui/WBEmptyState'
 import WBPage from '../components/ui/WBPage'
+import WBReactionBar from '../components/ui/WBReactionBar'
 import WBSkeletonCard from '../components/ui/WBSkeletonCard'
 import WBTopBar from '../components/ui/WBTopBar'
 import { useAuth } from '../contexts/AuthContext'
@@ -143,6 +144,7 @@ function TimelineUpdateCard({ update, isLatest, showLine }: { update: TeamUpdate
           <span className="text-micro text-ink-400">{dateStr}</span>
         </div>
         <p className="text-[14px] text-ink-700 leading-relaxed">{update.content}</p>
+        <WBReactionBar updateId={update.update_id} />
       </div>
     </div>
   )
