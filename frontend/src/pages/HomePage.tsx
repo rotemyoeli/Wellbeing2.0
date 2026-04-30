@@ -68,8 +68,13 @@ export default function HomePage() {
     }
   }, [user?.department_id])
 
+  // Duplicate submission guard
+  const [submitLock, setSubmitLock] = useState(false)
+
   /** Single final POST with all collected data */
   const handleSubmit = useCallback(async () => {
+    if (submitLock) return
+    setSubmitLock(true)
     setScreen('submitting')
     setErrorMsg('')
     try {
@@ -82,11 +87,15 @@ export default function HomePage() {
       })
       setSubmittedAt(new Date().toLocaleTimeString())
       setScreen('thanks')
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('a1_errNet'))
+    } catch {
+      // Never show raw error.message (Safari shows "Load failed" in English).
+      // Use localized error copy instead.
+      setErrorMsg(t('b1_errNet'))
       setScreen('error')
+    } finally {
+      setSubmitLock(false)
     }
-  }, [energy, anon, supportQ, workloadQ, comment])
+  }, [energy, anon, supportQ, workloadQ, comment, submitLock])
 
   const resetFlow = () => {
     setScreen('home')
@@ -117,17 +126,19 @@ export default function HomePage() {
   // ===== Error =====
   if (screen === 'error') {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6">
-        <div className="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-500)" strokeWidth="2" strokeLinecap="round">
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6 pb-safe"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 24px), 24px)' }}
+      >
+        <div className="w-16 h-16 rounded-xl border border-line bg-surface flex items-center justify-center mb-6 shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
-        <h1 className="text-h3 font-semibold text-ink-900 text-center">{t('f1_netErr')}</h1>
-        <p className="text-body text-ink-500 text-center mt-2 max-w-[300px]">{errorMsg}</p>
-        <div className="flex gap-3 mt-6">
+        <h1 className="text-h3 font-semibold text-ink-900 text-center">{t('f1_netErrTitle')}</h1>
+        <p className="text-body text-ink-500 text-center mt-3 max-w-[320px] leading-relaxed">{errorMsg}</p>
+        <div className="flex gap-3 mt-8">
           <WBButton kind="primary" onClick={handleSubmit}>{t('f1_retry')}</WBButton>
-          <WBButton kind="ghost" onClick={resetFlow}>{t('f3_home')}</WBButton>
+          <WBButton kind="secondary" onClick={resetFlow}>{t('f3_home')}</WBButton>
         </div>
       </div>
     )
@@ -161,8 +172,8 @@ export default function HomePage() {
     const pastUpdates = updates.slice(1)
 
     return (
-      <div className="min-h-screen bg-paper flex flex-col px-6 py-6">
-        {/* Header */}
+      <div className="min-h-screen bg-paper flex flex-col px-6 pt-14 pb-safe">
+        {/* Header — pushed down to avoid ViewSwitcher overlap for managers */}
         <div className="flex items-center justify-between">
           <WBBrand />
           <div className="flex items-center gap-3">

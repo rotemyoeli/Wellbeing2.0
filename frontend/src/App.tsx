@@ -1,10 +1,10 @@
 /**
- * App router — Phase 5E: hash-based routing for deep links + back/refresh.
+ * App router — Phase 6A: privacy scoping, mobile UX hotfix.
  *
  * Routes:
  *   #/           → home (employee check-in)
  *   #/dashboard  → manager dashboard
- *   #/alert/:id  → alert detail (needs alert data, falls back to dashboard)
+ *   #/alert/:id  → alert detail (fetches from API by ID)
  *   #/composer   → team update composer
  *   #/closures   → review unpublished closures
  */
@@ -90,6 +90,10 @@ function Router() {
     navigate('#/alert/' + alert.alert_id)
   }
 
+  // Durable alert detail route: if route matches but no alert in memory,
+  // extract the ID and let AlertDetailPage fetch it from the API.
+  const alertIdFromRoute = route.startsWith('/alert/') ? route.replace('/alert/', '') : null
+
   // Determine which screen to render
   let screen: React.ReactNode = null
 
@@ -103,10 +107,11 @@ function Router() {
         onOpenClosures={() => navigate('#/closures')}
       />
     )
-  } else if (route.startsWith('/alert/') && selectedAlert) {
+  } else if (alertIdFromRoute && canSeeDashboard) {
     screen = (
       <AlertDetailPage
         alert={selectedAlert}
+        alertId={alertIdFromRoute}
         onBack={() => navigate('#/dashboard')}
         onClosed={() => { setSelectedAlert(null); navigate('#/dashboard') }}
       />
@@ -141,26 +146,29 @@ function Router() {
 
 function ViewSwitcher({ current, onChange }: { current: 'home' | 'dashboard'; onChange: (v: 'home' | 'dashboard') => void }) {
   return (
-    <div className="fixed left-1/2 top-3 z-20 -translate-x-1/2 rounded-pill bg-sunken p-1 text-caption shadow-sm">
+    <nav
+      className="fixed left-1/2 z-20 -translate-x-1/2 flex gap-0.5 rounded-pill bg-surface/95 backdrop-blur-sm border border-line p-1 shadow-sm"
+      style={{ top: 'max(env(safe-area-inset-top, 8px), 8px)' }}
+    >
       <button
         type="button"
         onClick={() => onChange('home')}
-        className={`rounded-pill px-3 py-1 transition focus-visible:shadow-focus outline-none ${
-          current === 'home' ? 'bg-surface text-ink-900 shadow-sm' : 'text-ink-500'
+        className={`rounded-pill px-4 py-1.5 text-caption font-medium transition-colors focus-visible:shadow-focus outline-none ${
+          current === 'home' ? 'bg-accent-700 text-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
         }`}
       >
-        {t('b5_checkInCta')}
+        {t('nav_checkIn')}
       </button>
       <button
         type="button"
         onClick={() => onChange('dashboard')}
-        className={`rounded-pill px-3 py-1 transition focus-visible:shadow-focus outline-none ${
-          current === 'dashboard' ? 'bg-surface text-ink-900 shadow-sm' : 'text-ink-500'
+        className={`rounded-pill px-4 py-1.5 text-caption font-medium transition-colors focus-visible:shadow-focus outline-none ${
+          current === 'dashboard' ? 'bg-accent-700 text-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
         }`}
       >
-        {t('c1_title')}
+        {t('nav_dashboard')}
       </button>
-    </div>
+    </nav>
   )
 }
 

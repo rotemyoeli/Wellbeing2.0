@@ -62,6 +62,8 @@ class DashboardService:
 
         # --- Pull check-ins in the period ---------------------------------
         q = db.session.query(CheckIn).filter(CheckIn.created_at >= cutoff)
+        if department_id:
+            q = q.filter(CheckIn.department_id == department_id)
         rows = q.all()
 
         total = len(rows)

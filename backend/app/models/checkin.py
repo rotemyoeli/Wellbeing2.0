@@ -42,6 +42,11 @@ class CheckIn(db.Model, TimestampMixin):
     # Optional comment, encrypted at app layer (Sprint 4 activates).
     comment_ciphertext = db.Column(db.Text, nullable=True)
 
+    # Department snapshot — captures the reporter's department at check-in time.
+    # Used for safe aggregate reporting. Anonymous check-ins still carry this
+    # so dashboards can scope by department without joining to users.
+    department_id = db.Column(db.String(36), nullable=True, index=True)
+
     source = db.Column(db.String(40), nullable=False, default="web")
     shift_id = db.Column(
         db.String(36),

@@ -45,12 +45,26 @@ def summary():
     period_days = _parse_period(request.args.get("period"))
     department_id = request.args.get("departmentId") or None
 
+    user = current_user()
+
+    # Department scoping: managers can only see their own department.
+    # Admins can see any department or all (no filter).
+    if user["role"] == "manager":
+        from app.extensions import db as _db
+        from app.models.user import User as UserModel
+        db_user = _db.session.get(UserModel, user["user_id"])
+        manager_dept = db_user.department_id if db_user else None
+        if manager_dept:
+            # Ignore any client-supplied departmentId — enforce the manager's own
+            department_id = manager_dept
+        # If manager has no department assigned, allow the request but with
+        # whatever was sent (backwards compat for dev mode users).
+
     data = DashboardService.summary(
         period_days=period_days,
         department_id=department_id,
     )
 
-    user = current_user()
     AuditService.write(
         actor_id=user["user_id"],
         action="dashboard.summary.read",

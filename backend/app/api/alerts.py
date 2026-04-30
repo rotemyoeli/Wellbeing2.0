@@ -39,10 +39,45 @@ def list_alerts():
             }
         ), 400
 
-    alerts = AlertService.list_alerts(status=status)
+    # Department scoping: managers see only their department's alerts.
+    user = current_user()
+    department_id = None
+    if user["role"] == "manager":
+        from app.models.user import User as UserModel
+        db_user = db.session.get(UserModel, user["user_id"])
+        department_id = db_user.department_id if db_user else None
+
+    alerts = AlertService.list_alerts(status=status, department_id=department_id)
     return jsonify(
         {"items": [a.to_dict() for a in alerts], "total": len(alerts)}
     ), 200
+
+
+@alerts_bp.get("/<alert_id>")
+@role_required("manager", "admin")
+def get_alert_detail(alert_id: str):
+    """GET single alert by ID — supports durable deep links."""
+    alert = AlertService.get_alert(alert_id)
+    if alert is None:
+        return jsonify(
+            {"error": {"code": "NOT_FOUND", "message": "alert not found"}}
+        ), 404
+
+    # Department scoping for managers
+    user = current_user()
+    if user["role"] == "manager":
+        from app.models.user import User as UserModel
+        from app.models.checkin import CheckIn
+        db_user = db.session.get(UserModel, user["user_id"])
+        manager_dept = db_user.department_id if db_user else None
+        if manager_dept:
+            checkin = db.session.get(CheckIn, alert.check_in_id)
+            if checkin and checkin.department_id and checkin.department_id != manager_dept:
+                return jsonify(
+                    {"error": {"code": "FORBIDDEN", "message": "Cannot access alerts from another department"}}
+                ), 403
+
+    return jsonify(alert.to_dict()), 200
 
 
 @alerts_bp.post("/<alert_id>/ack")
@@ -53,6 +88,20 @@ def acknowledge(alert_id: str):
         return jsonify(
             {"error": {"code": "NOT_FOUND", "message": "alert not found"}}
         ), 404
+
+    # Department scoping: verify manager can access this alert's department
+    user = current_user()
+    if user["role"] == "manager":
+        from app.models.user import User as UserModel
+        from app.models.checkin import CheckIn
+        db_user = db.session.get(UserModel, user["user_id"])
+        manager_dept = db_user.department_id if db_user else None
+        if manager_dept:
+            checkin = db.session.get(CheckIn, alert.check_in_id)
+            if checkin and checkin.department_id and checkin.department_id != manager_dept:
+                return jsonify(
+                    {"error": {"code": "FORBIDDEN", "message": "Cannot access alerts from another department"}}
+                ), 403
 
     payload = request.get_json(silent=True) or {}
     step = payload.get("step")
@@ -67,8 +116,6 @@ def acknowledge(alert_id: str):
                 }
             }
         ), 400
-
-    user = current_user()
 
     publish_to_team = bool(payload.get("publishToTeam", False))
     department_id = payload.get("departmentId")
@@ -113,10 +160,17 @@ def unpublished_closures():
         days: int (default 14, max 90)
     """
     days = min(int(request.args.get("days", 14)), 90)
-    unpublished = AlertService.list_unpublished_closures(days=days)
-    published = AlertService.list_published_closures(days=days)
 
+    # Department scoping for managers
     user = current_user()
+    dept_filter = None
+    if user["role"] == "manager":
+        from app.models.user import User as UserModel
+        db_user = db.session.get(UserModel, user["user_id"])
+        dept_filter = db_user.department_id if db_user else None
+
+    unpublished = AlertService.list_unpublished_closures(days=days, department_id=dept_filter)
+    published = AlertService.list_published_closures(days=days, department_id=dept_filter)
     AuditService.write(
         actor_id=user["user_id"],
         action="alert.closures.review",

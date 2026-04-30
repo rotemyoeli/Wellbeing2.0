@@ -43,6 +43,19 @@ def list_updates():
     limit = min(int(request.args.get("limit", 20)), 50)
 
     user = current_user()
+
+    # Department scoping: employees and managers can only see their own department.
+    # Admins can see any department.
+    if user["role"] not in ("admin",):
+        from app.extensions import db as _db
+        from app.models.user import User as UserModel
+        db_user = _db.session.get(UserModel, user["user_id"])
+        user_dept = db_user.department_id if db_user else None
+        if user_dept and department_id != user_dept:
+            return jsonify(
+                {"error": {"code": "FORBIDDEN", "message": "Cannot access another department's updates"}}
+            ), 403
+
     # Managers see all (including unpublished); employees see published only
     published_only = user["role"] not in ("manager", "admin")
 

@@ -41,8 +41,9 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
       ])
       setSummary(s)
       setOpenAlerts(a.items)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('a1_errNet'))
+    } catch {
+      // Never show raw err.message (Safari says "Load failed" in English)
+      setError(t('f1_netErrBody'))
     } finally {
       setLoading(false)
     }
@@ -60,14 +61,17 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
 
   if (error) {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6">
-        <div className="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-500)" strokeWidth="2" strokeLinecap="round">
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6 pb-safe"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 24px), 24px)' }}
+      >
+        <div className="w-16 h-16 rounded-xl border border-line bg-surface flex items-center justify-center mb-6 shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
-        <p className="text-body text-ink-700 text-center">{error}</p>
-        <WBButton kind="primary" className="mt-4" onClick={refresh}>{t('f1_retry')}</WBButton>
+        <h1 className="text-h3 font-semibold text-ink-900 text-center">{t('f1_netErrTitle')}</h1>
+        <p className="text-body text-ink-500 text-center mt-3 max-w-[320px] leading-relaxed">{error}</p>
+        <WBButton kind="primary" className="mt-8" onClick={refresh}>{t('f1_retry')}</WBButton>
       </div>
     )
   }
@@ -75,9 +79,9 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
   const noData = !summary || summary.total_checkins === 0
 
   return (
-    <div className="min-h-screen bg-paper">
-      <div className="max-w-5xl mx-auto px-6 py-6">
-        {/* Header */}
+    <div className="min-h-screen bg-paper pb-safe">
+      <div className="max-w-5xl mx-auto px-6 pt-14">
+        {/* Header — pushed down to avoid ViewSwitcher overlap */}
         <div className="flex items-center justify-between mb-2">
           <WBBrand />
           <div className="flex items-center gap-3">

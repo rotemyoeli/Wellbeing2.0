@@ -1,12 +1,12 @@
 /**
  * C2 — Alert detail with 3-stage ack workflow + guided publish flow.
  *
- * Phase 5C: After closing an alert, the manager is guided to publish
- * a team update. They must either publish or provide a non-publication
- * reason. This makes NOT publishing harder than publishing, per
- * HANDOFF.md §6 and §10 design intent.
+ * Phase 6A: Durable alert detail route — supports direct links by fetching
+ * from API when alert is not in memory. Department-scoped access control
+ * is enforced by the backend.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { NetworkError } from '../components/ErrorStates'
 import WBAlertType from '../components/ui/WBAlertType'
 import WBButton from '../components/ui/WBButton'
 import WBCard from '../components/ui/WBCard'
@@ -18,25 +18,70 @@ import { isRtl, t } from '../lib/i18n'
 import type { Alert } from '../types'
 
 interface Props {
-  alert: Alert
+  alert: Alert | null
+  alertId: string
   onBack: () => void
   onClosed: () => void
 }
 
-type Stage = 'detail' | 'publish-prompt'
+type Stage = 'loading' | 'error' | 'forbidden' | 'detail' | 'publish-prompt'
 
 const statusLabels = { open: 'c2_statusOpen', ack1: 'c2_statusSeen', ack2: 'c2_statusContacted', closed: 'c2_statusClosed' } as const
 
-export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed }: Props) {
+export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, onClosed }: Props) {
   const { user } = useAuth()
-  const [alert, setAlert] = useState(initialAlert)
-  const [stage, setStage] = useState<Stage>('detail')
+  const [alert, setAlert] = useState<Alert | null>(initialAlert)
+  const [stage, setStage] = useState<Stage>(initialAlert ? 'detail' : 'loading')
   const [note, setNote] = useState('')
   const [publishContent, setPublishContent] = useState('')
   const [skipReason, setSkipReason] = useState('')
   const [showSkipForm, setShowSkipForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Fetch alert from API if not provided in memory (durable deep link)
+  useEffect(() => {
+    if (initialAlert) return
+    setStage('loading')
+    api.getAlert(alertId)
+      .then(a => { setAlert(a); setStage('detail') })
+      .catch((err) => {
+        if (err instanceof Error && err.message.includes('403')) {
+          setStage('forbidden')
+        } else {
+          setStage('error')
+        }
+      })
+  }, [alertId, initialAlert])
+
+  if (stage === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
+      </div>
+    )
+  }
+
+  if (stage === 'error') {
+    return <NetworkError onRetry={() => { setStage('loading'); api.getAlert(alertId).then(a => { setAlert(a); setStage('detail') }).catch(() => setStage('error')) }} onHome={onBack} />
+  }
+
+  if (stage === 'forbidden') {
+    return (
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6 pb-safe">
+        <div className="w-16 h-16 rounded-xl border border-line bg-surface flex items-center justify-center mb-6 shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <h1 className="text-h3 font-semibold text-ink-900 text-center">{t('f3_notFound')}</h1>
+        <p className="text-body text-ink-500 text-center mt-3 max-w-[320px]">{t('f3_notFoundSub')}</p>
+        <WBButton kind="primary" className="mt-8" onClick={onBack}>{t('c2_back')}</WBButton>
+      </div>
+    )
+  }
+
+  if (!alert) return null
 
   const created = new Date(alert.created_at)
   const mins = Math.round((Date.now() - created.getTime()) / 60000)
@@ -49,17 +94,16 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
         alert.alert_id,
         step,
         step === 3 ? note.trim() : undefined,
-        false, // don't auto-publish on close — guided flow handles it
+        false,
         undefined,
       )
       setAlert(updated)
       if (step === 3) {
-        // After closing, show publish prompt instead of going back
         setPublishContent(note.trim())
         setStage('publish-prompt')
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed')
+    } catch {
+      setError(t('b1_errNet'))
     } finally {
       setSubmitting(false)
     }
@@ -72,8 +116,8 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
     try {
       await api.publishClosure(alert.alert_id, user.department_id, publishContent.trim())
       onClosed()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed')
+    } catch {
+      setError(t('b1_errNet'))
     } finally {
       setSubmitting(false)
     }
@@ -81,8 +125,6 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
 
   const handleSkipPublish = () => {
     if (!skipReason.trim()) return
-    // Skip with reason — just go back. The closure stays unpublished
-    // and will appear in C8 (unpublished closures review).
     onClosed()
   }
 
@@ -97,11 +139,10 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
   // ===== Post-closure publish prompt (Phase 5C) =====
   if (stage === 'publish-prompt') {
     return (
-      <div className="min-h-screen bg-paper flex flex-col px-6 py-6">
+      <div className="min-h-screen bg-paper flex flex-col px-6 py-6 pb-safe">
         <WBSectionLabel>{t('c7_title')}</WBSectionLabel>
         <h1 className="text-h2 font-semibold text-ink-900 mt-2">{t('c7_hint')}</h1>
 
-        {/* Editable publish content — pre-filled with closure note */}
         <textarea
           className="mt-4 w-full rounded-lg border border-ink-200 bg-surface p-3.5 text-body text-ink-900 outline-none focus:shadow-focus focus:border-accent-700 resize-none"
           rows={4}
@@ -114,10 +155,9 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
           {publishContent.length} {t('c7_counter')}
         </p>
 
-        {/* Preview — what the team will see */}
         {publishContent.trim() && (
           <div className="mt-4">
-            <WBSectionLabel>Preview</WBSectionLabel>
+            <WBSectionLabel>{t('c7_preview')}</WBSectionLabel>
             <WBCard padding={14} className="!border-accent-300 !bg-accent-50">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center text-micro font-semibold text-teal-700">
@@ -132,7 +172,6 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
 
         {error && <p className="text-caption text-alert-low-fg mt-3">{error}</p>}
 
-        {/* Primary: publish. Secondary: skip (requires reason) */}
         <div className="flex-1" />
 
         <WBButton
@@ -180,9 +219,11 @@ export default function AlertDetailPage({ alert: initialAlert, onBack, onClosed 
 
   // ===== Alert detail =====
   return (
-    <div className="min-h-screen bg-paper flex flex-col px-6 py-6 overflow-y-auto">
+    <div className="min-h-screen bg-paper flex flex-col px-6 py-6 pb-safe overflow-y-auto"
+      style={{ paddingTop: 'max(env(safe-area-inset-top, 24px), 24px)' }}
+    >
       <button type="button" onClick={onBack} className="text-caption text-accent-700 self-start mb-4">
-        {isRtl() ? '→' : '←'} {t('c2_cancel')}
+        {isRtl() ? '→' : '←'} {t('c2_back')}
       </button>
 
       <div className="flex items-center gap-2 mb-2">

@@ -58,6 +58,12 @@ def create_checkin():
     comment = payload.get("comment")
     shift_id = payload.get("shiftId")
 
+    # Snapshot department from the user's current assignment.
+    # Resolved from DB to ensure consistency (user dict may be stale).
+    from app.models.user import User as UserModel
+    db_user = db.session.get(UserModel, user_id)
+    department_id = db_user.department_id if db_user else user.get("department_id")
+
     try:
         if anon_mode:
             salt = current_app.config.get("ANON_TOKEN_SALT", "")
@@ -69,6 +75,7 @@ def create_checkin():
                 workload_q=workload_q,
                 comment=comment,
                 shift_id=shift_id,
+                department_id=department_id,
             )
         else:
             check_in = CheckInService.create_identified(
@@ -78,6 +85,7 @@ def create_checkin():
                 workload_q=workload_q,
                 comment=comment,
                 shift_id=shift_id,
+                department_id=department_id,
             )
     except CheckInValidationError as exc:
         return jsonify(

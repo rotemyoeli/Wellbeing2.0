@@ -69,12 +69,17 @@ class AlertService:
     @staticmethod
     def list_alerts(
         status: Optional[str] = None,
+        department_id: Optional[str] = None,
         limit: int = 100,
     ) -> list[Alert]:
-        """List alerts, newest first, optionally filtered by status."""
+        """List alerts, newest first, optionally filtered by status and department."""
         q = db.session.query(Alert).order_by(Alert.created_at.desc())
         if status:
             q = q.filter(Alert.status == status)
+        if department_id:
+            q = q.join(CheckIn, Alert.check_in_id == CheckIn.check_in_id).filter(
+                CheckIn.department_id == department_id
+            )
         return q.limit(limit).all()
 
     @staticmethod
@@ -168,42 +173,50 @@ class AlertService:
     def list_unpublished_closures(
         days: int = 14,
         limit: int = 50,
+        department_id: Optional[str] = None,
     ) -> list[Alert]:
         """
         List closed alerts that were NOT published as team updates.
         Used by C8 screen for Mehva admin escalation review.
         """
-        cutoff = utcnow() - __import__("datetime").timedelta(days=days)
-        return (
+        from datetime import timedelta
+        cutoff = utcnow() - timedelta(days=days)
+        q = (
             db.session.query(Alert)
             .filter(
                 Alert.status == "closed",
                 Alert.closure_published.is_(False),
                 Alert.closed_at >= cutoff,
             )
-            .order_by(Alert.closed_at.desc())
-            .limit(limit)
-            .all()
         )
+        if department_id:
+            q = q.join(CheckIn, Alert.check_in_id == CheckIn.check_in_id).filter(
+                CheckIn.department_id == department_id
+            )
+        return q.order_by(Alert.closed_at.desc()).limit(limit).all()
 
     @staticmethod
     def list_published_closures(
         days: int = 14,
         limit: int = 50,
+        department_id: Optional[str] = None,
     ) -> list[Alert]:
         """List closed alerts that WERE published as team updates."""
-        cutoff = utcnow() - __import__("datetime").timedelta(days=days)
-        return (
+        from datetime import timedelta
+        cutoff = utcnow() - timedelta(days=days)
+        q = (
             db.session.query(Alert)
             .filter(
                 Alert.status == "closed",
                 Alert.closure_published.is_(True),
                 Alert.closed_at >= cutoff,
             )
-            .order_by(Alert.closed_at.desc())
-            .limit(limit)
-            .all()
         )
+        if department_id:
+            q = q.join(CheckIn, Alert.check_in_id == CheckIn.check_in_id).filter(
+                CheckIn.department_id == department_id
+            )
+        return q.order_by(Alert.closed_at.desc()).limit(limit).all()
 
     @classmethod
     def publish_closure(

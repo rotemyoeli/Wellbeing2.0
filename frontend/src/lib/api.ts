@@ -172,6 +172,12 @@ class WellbeingApiClient {
   }
 
   // ------------- Alerts --------------------------------------------------
+  async getAlert(alertId: string): Promise<Alert> {
+    const r = await fetch(`${this.baseUrl}/alerts/${alertId}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
   async listAlerts(status?: AlertStatus): Promise<{ items: Alert[]; total: number }> {
     const url = status ? `${this.baseUrl}/alerts/?status=${status}` : `${this.baseUrl}/alerts/`
     const r = await fetch(url, { headers: this.headers() })
