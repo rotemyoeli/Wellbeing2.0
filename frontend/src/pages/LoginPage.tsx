@@ -15,11 +15,12 @@ import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 
 const DEMO_USERS = [
-  { userId: 'demo-superadmin', label: 'מנהל-על', labelEn: 'Super Admin', accent: true },
-  { userId: 'demo-mgr-internal-a', label: 'מנהל/ת פנימית', labelEn: 'Mgr Internal' },
-  { userId: 'demo-mgr-er', label: 'מנהל/ת מיון', labelEn: 'Mgr ER' },
-  { userId: 'demo-internal-a-00', label: 'אח/ות פנימית', labelEn: 'Employee' },
-  { userId: 'demo-er-00', label: 'אח/ות מיון', labelEn: 'Employee ER' },
+  { userId: 'demo-superadmin', label: 'Admin', accent: true },
+  { userId: 'demo-mgr-internal-a', label: 'Mgr Internal' },
+  { userId: 'demo-mgr-er', label: 'Mgr ER' },
+  { userId: 'demo-mgr-pediatrics', label: 'Mgr Pediatrics' },
+  { userId: 'demo-internal-a-00', label: 'Employee Int' },
+  { userId: 'demo-er-00', label: 'Employee ER' },
 ]
 
 export default function LoginPage() {
