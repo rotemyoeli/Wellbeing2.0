@@ -230,11 +230,18 @@ def demo_login():
 def me():
     """Return the current user's profile, including department_id from DB."""
     user = current_user()
-    # Enrich with department_id from DB (the g.current_user dict may not have it)
     from app.extensions import db as _db
     from app.models.user import User
     db_user = _db.session.get(User, user["user_id"])
     dept_id = db_user.department_id if db_user else None
+
+    # is_dev_mode is true if DEV_MODE or DEMO_MODE is on — frontend uses
+    # this to skip the consent gate (consent is pre-seeded for demo users).
+    is_dev = (
+        user.get("is_dev_mode", False)
+        or current_app.config.get("DEV_MODE_ENABLED", False)
+        or current_app.config.get("DEMO_MODE_ENABLED", False)
+    )
 
     return jsonify(
         {
@@ -243,7 +250,7 @@ def me():
                 "role": user.get("role"),
                 "display_name": user.get("display_name"),
                 "department_id": dept_id,
-                "is_dev_mode": user.get("is_dev_mode", False),
+                "is_dev_mode": is_dev,
             }
         }
     ), 200

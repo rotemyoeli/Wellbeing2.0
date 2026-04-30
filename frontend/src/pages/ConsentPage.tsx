@@ -44,7 +44,7 @@ export default function ConsentPage({ onAccept }: Props) {
       await api.acceptConsent()
       onAccept()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('a1_errNet'))
+      setError(t('a1_errNet'))
     } finally {
       setLoading(false)
     }

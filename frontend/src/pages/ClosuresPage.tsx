@@ -34,7 +34,7 @@ export default function ClosuresPage({ onBack }: Props) {
       setUnpublished(data.unpublished)
       setPublished(data.published)
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('a1_errNet'))
+      setError(t('b1_errNet'))
     }
     setLoading(false)
   }, [])
@@ -48,7 +48,7 @@ export default function ClosuresPage({ onBack }: Props) {
       await api.publishClosure(alert.alert_id, user.department_id)
       await refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('a1_errNet'))
+      setError(t('b1_errNet'))
     } finally {
       setPublishing(null)
     }

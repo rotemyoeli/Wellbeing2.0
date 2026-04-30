@@ -23,7 +23,7 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
 
   const handlePublish = async () => {
     if (!user?.department_id) {
-      setError('No department set. Update your profile first.')
+      setError(t('a1_errNet'))
       return
     }
     setLoading(true)
@@ -32,7 +32,7 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
       await api.createTeamUpdate(user.department_id, content.trim())
       onPublished()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed')
+      setError(t('b1_errNet'))
     } finally {
       setLoading(false)
     }
@@ -60,7 +60,7 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
       {/* Preview */}
       {content.trim() && (
         <div className="mt-6">
-          <WBSectionLabel>Preview</WBSectionLabel>
+          <WBSectionLabel>{t('c7_preview')}</WBSectionLabel>
           <WBCard padding={14}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center text-micro font-semibold text-teal-700">
