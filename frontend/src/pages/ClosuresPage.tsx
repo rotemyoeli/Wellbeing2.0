@@ -55,11 +55,11 @@ export default function ClosuresPage({ onBack }: Props) {
   }
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-paper text-ink-500">...</div>
+    return <div className="flex min-h-app items-center justify-center bg-paper pb-nav text-ink-500">...</div>
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col px-6 py-6 max-w-2xl mx-auto">
+    <div className="min-h-app bg-paper flex flex-col px-6 pt-6 pb-nav max-w-2xl mx-auto">
       <button type="button" onClick={onBack} className="text-caption text-accent-700 self-start mb-4">
         {isRtl() ? '→' : '←'} {t('c1_title')}
       </button>

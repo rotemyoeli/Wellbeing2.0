@@ -56,7 +56,7 @@ export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, 
 
   if (stage === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper">
+      <div className="flex min-h-app items-center justify-center bg-paper pb-nav">
         <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
       </div>
     )
@@ -68,7 +68,7 @@ export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, 
 
   if (stage === 'forbidden') {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6 pb-safe">
+      <div className="min-h-app bg-paper flex flex-col items-center justify-center px-6 pb-nav">
         <div className="w-16 h-16 rounded-xl border border-line bg-surface flex items-center justify-center mb-6 shadow-sm">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -139,7 +139,7 @@ export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, 
   // ===== Post-closure publish prompt (Phase 5C) =====
   if (stage === 'publish-prompt') {
     return (
-      <div className="min-h-screen bg-paper flex flex-col px-6 py-6 pb-safe">
+      <div className="min-h-app bg-paper flex flex-col px-6 pt-6 pb-nav">
         <WBSectionLabel>{t('c7_title')}</WBSectionLabel>
         <h1 className="text-h2 font-semibold text-ink-900 mt-2">{t('c7_hint')}</h1>
 
@@ -219,7 +219,7 @@ export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, 
 
   // ===== Alert detail =====
   return (
-    <div className="min-h-screen bg-paper flex flex-col px-6 py-6 pb-safe overflow-y-auto"
+    <div className="min-h-app bg-paper flex flex-col px-6 pt-6 pb-nav overflow-y-auto"
       style={{ paddingTop: 'max(env(safe-area-inset-top, 24px), 24px)' }}
     >
       <button type="button" onClick={onBack} className="text-caption text-accent-700 self-start mb-4">

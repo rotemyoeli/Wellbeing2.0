@@ -56,7 +56,7 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col px-6 py-6 max-w-2xl mx-auto">
+    <div className="min-h-app bg-paper flex flex-col px-6 pt-6 pb-nav max-w-2xl mx-auto">
       <WBBrand />
 
       <h1 className="text-h1 font-bold text-ink-900 mt-6">{t('c7_title')}</h1>
