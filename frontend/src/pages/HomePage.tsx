@@ -320,6 +320,12 @@ export default function HomePage({ onStartCheckIn }: Props) {
             </div>
           )}
         </div>
+
+        {/* System status (#14) */}
+        <div className="mt-6 flex items-center justify-center gap-2 py-3">
+          <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+          <span className="text-micro text-ink-400">{t('status_live')}</span>
+        </div>
       </div>
     </WBPage>
   )

@@ -320,6 +320,22 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
           </div>
         )}
 
+        {/* Alert history timeline (#11) */}
+        {summary && summary.total_closed_alerts > 0 && (
+          <div className="mb-5">
+            <WBSectionLabel>{t('alert_history')}</WBSectionLabel>
+            <div className="rounded-xl border border-line bg-surface p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-100 to-surface flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wb-teal-700)" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              </div>
+              <div>
+                <p className="text-caption font-medium text-ink-900">{summary.total_closed_alerts} {t('settings_closedAlerts')}</p>
+                <p className="text-micro text-ink-400">{summary.total_published_closures} {t('status_updates_total')}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Manager actions */}
         <div className="flex gap-3 mt-2 mb-8">
           <WBButton kind="primary" onClick={onOpenComposer} full>{t('c7_title')}</WBButton>
