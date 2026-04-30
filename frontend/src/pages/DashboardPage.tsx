@@ -299,13 +299,13 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
             <p className="text-micro text-ink-500 font-semibold uppercase tracking-widest mb-2">{t('actions_title')}</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { key: 'action_talk', icon: '💬', color: 'from-accent-50 to-surface' },
-                { key: 'action_shiftChange', icon: '🔄', color: 'from-teal-100 to-surface' },
-                { key: 'action_teamMeeting', icon: '👥', color: 'from-accent-50 to-surface' },
-                { key: 'action_socialWorker', icon: '🤝', color: 'from-teal-100 to-surface' },
+                { key: 'action_talk', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wb-accent-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>, color: 'from-accent-50 to-surface' },
+                { key: 'action_shiftChange', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wb-teal-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>, color: 'from-teal-100 to-surface' },
+                { key: 'action_teamMeeting', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wb-accent-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4" /><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0-3-3.85" /></svg>, color: 'from-accent-50 to-surface' },
+                { key: 'action_socialWorker', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wb-teal-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" /></svg>, color: 'from-teal-100 to-surface' },
               ].map(a => (
-                <div key={a.key} className={`rounded-xl bg-gradient-to-br ${a.color} border border-line p-3 flex items-center gap-2`}>
-                  <span className="text-[16px]">{a.icon}</span>
+                <div key={a.key} className={`rounded-xl bg-gradient-to-br ${a.color} border border-line p-3 flex items-center gap-2.5`}>
+                  <div className="w-7 h-7 rounded-lg bg-surface/80 flex items-center justify-center shrink-0 shadow-sm">{a.icon}</div>
                   <span className="text-caption text-ink-700">{t(a.key)}</span>
                 </div>
               ))}

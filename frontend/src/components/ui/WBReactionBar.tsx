@@ -48,7 +48,7 @@ export default function WBReactionBar({ updateId }: Props) {
             : 'bg-sunken text-ink-500 border border-transparent hover:border-line'
           }`}
       >
-        <span>👍</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
         <span>{t('reaction_feltIt')}</span>
         {counts && counts.felt_it > 0 && <span className="text-ink-400 ms-0.5">{counts.felt_it}</span>}
       </button>
