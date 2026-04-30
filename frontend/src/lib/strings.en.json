@@ -237,5 +237,10 @@
   "c2_back": "Back to dashboard",
   "variant_a": "Battery",
   "variant_b": "Orb",
-  "variant_c": "Faces"
+  "variant_c": "Faces",
+  "feeling_0": "Not great at all",
+  "feeling_1": "Tough day but manageable",
+  "feeling_2": "A fairly okay day",
+  "feeling_3": "The sun is smiling today",
+  "feeling_4": "A wonderful day that keeps going"
 }
