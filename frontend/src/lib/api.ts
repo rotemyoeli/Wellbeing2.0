@@ -63,6 +63,10 @@ class WellbeingApiClient {
   }
 
   private async parseError(response: Response): Promise<string> {
+    // Rate limit: show remaining wait time
+    if (response.status === 429) {
+      return `RATE_LIMITED:${response.status}`
+    }
     try {
       const body = (await response.json()) as ApiError
       return body?.error?.message ?? `Request failed: ${response.status}`

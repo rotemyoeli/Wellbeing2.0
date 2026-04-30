@@ -45,6 +45,22 @@ export default function ComposerPage({ onBack, onPublished }: Props) {
       <h1 className="text-h1 font-bold text-ink-900 mt-6">{t('c7_title')}</h1>
       <p className="text-body text-ink-500 mt-2">{t('c7_hint')}</p>
 
+      {/* Quick templates (#10) */}
+      {!content && (
+        <div className="mt-4 mb-2">
+          <p className="text-micro text-ink-400 font-semibold uppercase tracking-widest mb-2">{t('template_title')}</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button key={n} type="button" onClick={() => setContent(t(`template_${n}`))}
+                className="shrink-0 max-w-[200px] rounded-xl border border-line bg-surface p-3 text-start no-tap-highlight hover:shadow-sm transition">
+                <p className="text-micro text-ink-700 line-clamp-2 leading-snug">{t(`template_${n}`).slice(0, 60)}...</p>
+                <p className="text-[9px] text-accent-700 font-medium mt-1">{t('template_use')}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <textarea
         className="mt-6 w-full rounded-lg border border-ink-200 bg-surface p-4 text-body text-ink-900 outline-none focus:shadow-focus focus:border-accent-700 resize-none"
         rows={6}

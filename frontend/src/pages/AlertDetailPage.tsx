@@ -263,8 +263,17 @@ export default function AlertDetailPage({ alert: initialAlert, alertId, onBack, 
         </div>
       )}
 
+      {/* Internal note — visible only to managers (#12) */}
+      <div className="mt-6 rounded-xl bg-sunken border border-line p-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+          <span className="text-micro text-ink-400 font-medium">{t('internal_note')}</span>
+        </div>
+        <p className="text-micro text-ink-400 leading-snug">{t('internal_note_hint')}</p>
+      </div>
+
       {alert.status === 'ack2' && (
-        <div className="mt-6">
+        <div className="mt-4">
           <WBSectionLabel>{t('c2_closureLabel')}</WBSectionLabel>
           <textarea
             className="w-full rounded-lg border border-line bg-surface p-3.5 text-body text-ink-900 outline-none focus:shadow-focus resize-none"
