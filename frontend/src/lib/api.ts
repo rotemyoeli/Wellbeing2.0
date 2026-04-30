@@ -21,6 +21,7 @@ export interface SubmitCheckInPayload {
   workloadQ?: boolean | null
   comment?: string | null
   shiftId?: string | null
+  needsTalk?: boolean
 }
 
 export interface SubmitCheckInResponse {

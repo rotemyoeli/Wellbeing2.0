@@ -42,6 +42,10 @@ class CheckIn(db.Model, TimestampMixin):
     # Optional comment, encrypted at app layer (Sprint 4 activates).
     comment_ciphertext = db.Column(db.Text, nullable=True)
 
+    # Anonymous "I need a conversation" flag — manager sees that someone in
+    # the team needs support, without knowing who.
+    needs_talk = db.Column(db.Boolean, nullable=True, default=False)
+
     # Department snapshot — captures the reporter's department at check-in time.
     # Used for safe aggregate reporting. Anonymous check-ins still carry this
     # so dashboards can scope by department without joining to users.

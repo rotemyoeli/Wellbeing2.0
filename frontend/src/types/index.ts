@@ -80,6 +80,7 @@ export interface DashboardSummary {
   total_closed_alerts: number
   total_published_closures: number
   open_alerts_count: number
+  needs_talk_count?: number
   nudges: DashboardNudge[]
 }
 

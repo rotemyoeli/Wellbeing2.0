@@ -70,6 +70,7 @@ class CheckInService:
         comment: Optional[str] = None,
         shift_id: Optional[str] = None,
         department_id: Optional[str] = None,
+        needs_talk: bool = False,
         source: str = "web",
     ) -> CheckIn:
         """
@@ -92,6 +93,7 @@ class CheckInService:
             comment_ciphertext=cls._encrypt_comment(comment),
             shift_id=shift_id,
             department_id=department_id,
+            needs_talk=needs_talk,
             source=source,
         )
         db.session.add(check_in)
@@ -113,6 +115,7 @@ class CheckInService:
         comment: Optional[str] = None,
         shift_id: Optional[str] = None,
         department_id: Optional[str] = None,
+        needs_talk: bool = False,
         source: str = "web",
     ) -> CheckIn:
         """
@@ -156,6 +159,7 @@ class CheckInService:
             comment_ciphertext=cls._encrypt_comment(comment),
             shift_id=shift_id,
             department_id=department_id,
+            needs_talk=needs_talk,
             source=source,
         )
         db.session.add(check_in)

@@ -57,6 +57,7 @@ def create_checkin():
     workload_q = payload.get("workloadQ")
     comment = payload.get("comment")
     shift_id = payload.get("shiftId")
+    needs_talk = bool(payload.get("needsTalk", False))
 
     # Snapshot department from the user's current assignment.
     # Resolved from DB to ensure consistency (user dict may be stale).
@@ -76,6 +77,7 @@ def create_checkin():
                 comment=comment,
                 shift_id=shift_id,
                 department_id=department_id,
+                needs_talk=needs_talk,
             )
         else:
             check_in = CheckInService.create_identified(
@@ -86,6 +88,7 @@ def create_checkin():
                 comment=comment,
                 shift_id=shift_id,
                 department_id=department_id,
+                needs_talk=needs_talk,
             )
     except CheckInValidationError as exc:
         return jsonify(

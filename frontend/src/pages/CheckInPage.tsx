@@ -48,6 +48,7 @@ export default function CheckInPage({ onDone }: Props) {
   const [supportQ, setSupportQ] = useState<boolean | null>(null)
   const [workloadQ, setWorkloadQ] = useState<boolean | null>(null)
   const [comment, setComment] = useState('')
+  const [needsTalk, setNeedsTalk] = useState(false)
 
   /** Single final POST with all collected data */
   const handleSubmit = useCallback(async () => {
@@ -62,6 +63,7 @@ export default function CheckInPage({ onDone }: Props) {
         supportQ: supportQ ?? undefined,
         workloadQ: workloadQ ?? undefined,
         comment: comment.trim() || undefined,
+        needsTalk: needsTalk || undefined,
       })
       setSubmittedAt(new Date().toLocaleTimeString())
       setScreen('thanks')
@@ -174,6 +176,34 @@ export default function CheckInPage({ onDone }: Props) {
 
         {/* Anon toggle */}
         <WBAnonToggle anon={anon} onToggle={() => setAnon(!anon)} />
+
+        {/* "I need a conversation" — discreet toggle */}
+        <button
+          type="button"
+          onClick={() => setNeedsTalk(!needsTalk)}
+          className={`
+            flex items-center gap-2.5 mt-3 px-4 py-2.5 rounded-xl border transition-all text-start w-full
+            ${needsTalk
+              ? 'border-teal-300 bg-teal-100/40'
+              : 'border-line bg-surface'
+            }
+          `}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke={needsTalk ? 'var(--wb-teal-700)' : 'var(--wb-ink-400)'}
+            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className={`text-caption font-medium ${needsTalk ? 'text-teal-700' : 'text-ink-700'}`}>{t('needsTalk')}</p>
+            <p className="text-micro text-ink-400 leading-snug">{t('needsTalkHint')}</p>
+          </div>
+          {needsTalk && (
+            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+            </div>
+          )}
+        </button>
 
         {/* Primary: quick submit (15s path). Secondary: add more detail */}
         <WBButton kind="primary" full className="mt-4" onClick={handleSubmit}>

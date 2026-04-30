@@ -184,6 +184,9 @@ class DashboardService:
             .count()
         )
 
+        # --- Needs-talk count (anonymous help requests) -------------------------
+        needs_talk_count = sum(1 for r in rows if r.needs_talk)
+
         return {
             "period_days": period_days,
             "total_checkins": total,
@@ -199,6 +202,7 @@ class DashboardService:
             "total_closed_alerts": total_closed,
             "total_published_closures": total_published,
             "open_alerts_count": open_alerts_count,
+            "needs_talk_count": needs_talk_count,
             "nudges": nudges,
         }
 
