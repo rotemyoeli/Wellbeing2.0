@@ -67,6 +67,21 @@ export default function HomePage({ onStartCheckIn }: Props) {
     : null
   const reportedToday = myCheckins.length > 0 && new Date(myCheckins[0].created_at).toDateString() === new Date().toDateString()
 
+  // Weekly tip (#6)
+  const weeklyTip = (() => {
+    if (myCheckins.length === 0) return null
+    if (myCheckins.length === 1) return t('tip_first')
+    const recent = myCheckins.slice(0, 7)
+    const older = myCheckins.slice(7, 14)
+    if (older.length === 0) return t('tip_stable')
+    const recentAvg = recent.reduce((s, c) => s + c.energy, 0) / recent.length
+    const olderAvg = older.reduce((s, c) => s + c.energy, 0) / older.length
+    const diff = Math.round(recentAvg - olderAvg)
+    if (diff > 3) return t('tip_up', { n: `${diff}` })
+    if (diff < -3) return t('tip_down', { n: `${Math.abs(diff)}` })
+    return t('tip_stable')
+  })()
+
   return (
     <WBPage>
       <WBTopBar
@@ -235,6 +250,34 @@ export default function HomePage({ onStartCheckIn }: Props) {
             <div className="flex justify-between mt-1">
               <span className="text-[8px] text-ink-400">{myCheckins.length > 1 ? new Date(myCheckins[myCheckins.length-1].created_at).toLocaleDateString() : ''}</span>
               <span className="text-[8px] text-ink-400">{t('home_lastReport')}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Weekly tip (#6) */}
+        {weeklyTip && (
+          <div className="flex items-center gap-2 rounded-xl bg-accent-50 border border-accent-100 px-4 py-2.5 mb-4">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--wb-accent-700)" strokeWidth="2" strokeLinecap="round"><path d="M9 18h6M10 22h4M12 2v1M4.22 4.22l.71.71M1 12h1M4.22 19.78l.71-.71M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" /></svg>
+            <p className="text-micro text-accent-700 font-medium">{weeklyTip}</p>
+          </div>
+        )}
+
+        {/* Monthly summary (#9) */}
+        {myCheckins.length >= 5 && (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="rounded-xl bg-gradient-to-br from-accent-50 to-surface border border-accent-100 p-3 text-center">
+              <p className="text-[18px] font-bold text-ink-900">{myCheckins.length}</p>
+              <p className="text-[8px] text-ink-400 uppercase tracking-widest">{t('monthly_reports')}</p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-teal-100 to-surface border border-line p-3 text-center">
+              <p className="text-[18px] font-bold text-ink-900">{avgEnergy ?? '—'}</p>
+              <p className="text-[8px] text-ink-400 uppercase tracking-widest">{t('monthly_avgEnergy')}</p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-accent-50 to-surface border border-accent-100 p-3 text-center">
+              <p className="text-[18px] font-bold text-ink-900">
+                {(() => { const best = myCheckins.reduce((b, c) => c.energy > b.energy ? c : b, myCheckins[0]); return ['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(best.created_at).getDay()] })()}
+              </p>
+              <p className="text-[8px] text-ink-400 uppercase tracking-widest">{t('monthly_bestDay')}</p>
             </div>
           </div>
         )}
