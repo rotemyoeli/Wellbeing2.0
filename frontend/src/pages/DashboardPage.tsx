@@ -236,6 +236,26 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
           </>
         )}
 
+        {/* Recommended actions (idea 10) */}
+        {openAlerts.length > 0 && (
+          <div className="mb-5">
+            <p className="text-micro text-ink-500 font-semibold uppercase tracking-widest mb-2">{t('actions_title')}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'action_talk', icon: '💬', color: 'from-accent-50 to-surface' },
+                { key: 'action_shiftChange', icon: '🔄', color: 'from-teal-100 to-surface' },
+                { key: 'action_teamMeeting', icon: '👥', color: 'from-accent-50 to-surface' },
+                { key: 'action_socialWorker', icon: '🤝', color: 'from-teal-100 to-surface' },
+              ].map(a => (
+                <div key={a.key} className={`rounded-xl bg-gradient-to-br ${a.color} border border-line p-3 flex items-center gap-2`}>
+                  <span className="text-[16px]">{a.icon}</span>
+                  <span className="text-caption text-ink-700">{t(a.key)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Manager actions */}
         <div className="flex gap-3 mt-2 mb-8">
           <WBButton kind="primary" onClick={onOpenComposer} full>{t('c7_title')}</WBButton>

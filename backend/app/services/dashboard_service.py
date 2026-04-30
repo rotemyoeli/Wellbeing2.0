@@ -298,4 +298,15 @@ class DashboardService:
                     "severity": "warning",
                 })
 
+        # Idea 9: Smart trend detection — 3+ consecutive declining days
+        if len(trend) >= 3:
+            last3 = trend[-3:]
+            avgs = [d.get("avg") for d in last3 if d.get("avg") is not None]
+            if len(avgs) == 3 and avgs[0] > avgs[1] > avgs[2]:
+                nudges.append({
+                    "type": "trend_down",
+                    "message": f"Energy has declined for 3 consecutive days ({avgs[0]} → {avgs[2]}). Consider checking in with the team.",
+                    "severity": "warning",
+                })
+
         return nudges
