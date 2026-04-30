@@ -6,6 +6,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react'
 import WBButton from '../components/ui/WBButton'
+import { showToast } from '../components/ui/WBToast'
 import WBInput from '../components/ui/WBInput'
 import WBPage from '../components/ui/WBPage'
 import WBTopBar from '../components/ui/WBTopBar'
@@ -139,7 +140,7 @@ function OrgSection() {
 
   const save = async () => {
     setSaving(true); setMsg('')
-    try { await api.adminUpdateOrg({ name, logo_url: logoUrl, address, phone, email }); setMsg(t('settings_saved')) }
+    try { await api.adminUpdateOrg({ name, logo_url: logoUrl, address, phone, email }); setMsg(t('settings_saved')); showToast(t('toast_saved')) }
     catch { setMsg(t('b1_errNet')) }
     finally { setSaving(false) }
   }
@@ -306,7 +307,7 @@ function PoliciesSection() {
 
   const save = async () => {
     setSaving(true); setMsg('')
-    try { const r = await api.adminUpdatePolicies(edits); setPolicies(r.policies); setEdits({}); setMsg(t('settings_saved')) }
+    try { const r = await api.adminUpdatePolicies(edits); setPolicies(r.policies); setEdits({}); setMsg(t('settings_saved')); showToast(t('toast_saved')) }
     catch { setMsg(t('b1_errNet')) }
     finally { setSaving(false) }
   }

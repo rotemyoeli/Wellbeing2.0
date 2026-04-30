@@ -14,6 +14,7 @@ import WBAnonToggle from '../components/ui/WBAnonToggle'
 import WBBrand from '../components/ui/WBBrand'
 import WBButton from '../components/ui/WBButton'
 import WBCard from '../components/ui/WBCard'
+import { showToast } from '../components/ui/WBToast'
 import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 
@@ -76,6 +77,7 @@ export default function CheckInPage({ onDone }: Props) {
     } catch {
       setErrorMsg(t('b1_errNet'))
       setScreen('error')
+      showToast(t('toast_error'), 'error')
     } finally {
       setSubmitLock(false)
     }

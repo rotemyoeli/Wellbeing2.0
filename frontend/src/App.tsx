@@ -11,6 +11,7 @@
  *   #/closures   → review unpublished closures
  */
 import { useEffect, useState } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
 import { OfflineBanner } from './components/ErrorStates'
 import WBBottomNav, { type TabId } from './components/ui/WBBottomNav'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -24,6 +25,7 @@ import DashboardPage from './pages/DashboardPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
+import WBToastContainer from './components/ui/WBToast'
 import UpdatesPage from './pages/UpdatesPage'
 import type { Alert } from './types'
 
@@ -182,8 +184,11 @@ function Router() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router />
+        <WBToastContainer />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

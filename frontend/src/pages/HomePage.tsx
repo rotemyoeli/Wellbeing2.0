@@ -65,6 +65,7 @@ export default function HomePage({ onStartCheckIn }: Props) {
   const avgEnergy = myCheckins.length > 0
     ? Math.round(myCheckins.reduce((s, c) => s + c.energy, 0) / myCheckins.length)
     : null
+  const reportedToday = myCheckins.length > 0 && new Date(myCheckins[0].created_at).toDateString() === new Date().toDateString()
 
   return (
     <WBPage>
@@ -94,7 +95,15 @@ export default function HomePage({ onStartCheckIn }: Props) {
           <div className="absolute -top-6 -end-6 w-28 h-28 rounded-full border border-white/5" />
 
           {/* Greeting row */}
-          <p className="text-white/50 text-micro uppercase tracking-widest">{greeting}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-white/50 text-micro uppercase tracking-widest">{greeting}</p>
+            {reportedToday && (
+              <span className="text-[8px] font-semibold text-teal-300 bg-teal-700/40 px-1.5 py-0.5 rounded-pill flex items-center gap-1">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                {t('reported_today')}
+              </span>
+            )}
+          </div>
           <h1 className="text-[20px] font-bold text-white mt-1 leading-tight">{user?.display_name}</h1>
 
           {/* Main visual: gauge + sparkline side by side */}
@@ -166,6 +175,16 @@ export default function HomePage({ onStartCheckIn }: Props) {
             accent
           />
         </div>
+
+        {/* Loop counter (idea 15) */}
+        {updates.length > 0 && (
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+            </div>
+            <p className="text-micro text-teal-700 font-medium">{t('loop_closed_count', { n: `${updates.length}` })}</p>
+          </div>
+        )}
 
         {/* Response loop visualization (ideas 14+15) */}
         {updates.length > 0 && (
