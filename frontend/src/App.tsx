@@ -24,6 +24,7 @@ import ConsentPage from './pages/ConsentPage'
 import DashboardPage from './pages/DashboardPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import WBOnboarding from './components/ui/WBOnboarding'
 import SettingsPage from './pages/SettingsPage'
 import WBToastContainer from './components/ui/WBToast'
 import UpdatesPage from './pages/UpdatesPage'
@@ -57,6 +58,9 @@ function Router() {
   const hash = useHash()
   const [needsConsent, setNeedsConsent] = useState<boolean | null>(null)
   const [online, setOnline] = useState(navigator.onLine)
+  const [needsOnboarding, setNeedsOnboarding] = useState(() =>
+    localStorage.getItem('wellbeing.onboarded') !== 'true'
+  )
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
 
   useEffect(() => {
@@ -99,6 +103,11 @@ function Router() {
         <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
       </div>
     )
+  }
+
+  // Onboarding wizard for first-time users
+  if (needsOnboarding && !user?.is_dev_mode) {
+    return <WBOnboarding onComplete={() => setNeedsOnboarding(false)} />
   }
 
   const canSeeDashboard = user?.role === 'manager' || user?.role === 'admin'
@@ -169,7 +178,9 @@ function Router() {
 
   return (
     <>
-      {screen}
+      <div key={route} className="animate-fadeIn">
+        {screen}
+      </div>
       {!isFullScreenRoute && (
         <WBBottomNav
           current={activeTab}

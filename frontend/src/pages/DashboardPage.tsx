@@ -59,8 +59,15 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
 
   if (loading) {
     return (
-      <div className="flex min-h-app items-center justify-center bg-paper pb-nav">
-        <div className="w-10 h-10 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin" />
+      <div className="min-h-app bg-paper pb-nav px-5 pt-safe">
+        <div className="h-12 mb-4 mt-3" />
+        <div className="h-48 rounded-2xl skeleton-shimmer mb-5" />
+        <div className="h-24 rounded-xl skeleton-shimmer mb-4" />
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="h-20 rounded-xl skeleton-shimmer" />
+          <div className="h-20 rounded-xl skeleton-shimmer" />
+        </div>
+        <div className="h-40 rounded-xl skeleton-shimmer" />
       </div>
     )
   }
