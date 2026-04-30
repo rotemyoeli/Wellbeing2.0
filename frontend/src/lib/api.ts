@@ -253,6 +253,101 @@ class WellbeingApiClient {
     })
     if (!r.ok) throw new Error(await this.parseError(r))
   }
+  // ------------- Admin ----------------------------------------------------
+  async adminGetOrg(): Promise<{ organization: Record<string, unknown> | null }> {
+    const r = await fetch(`${this.baseUrl}/admin/organization`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminUpdateOrg(data: Record<string, unknown>): Promise<{ organization: Record<string, unknown> }> {
+    const r = await fetch(`${this.baseUrl}/admin/organization`, {
+      method: 'PUT', headers: this.headers(), body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminListDepts(): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const r = await fetch(`${this.baseUrl}/admin/departments`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminCreateDept(data: { name: string; slug: string }): Promise<Record<string, unknown>> {
+    const r = await fetch(`${this.baseUrl}/admin/departments`, {
+      method: 'POST', headers: this.headers(), body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminUpdateDept(deptId: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const r = await fetch(`${this.baseUrl}/admin/departments/${deptId}`, {
+      method: 'PATCH', headers: this.headers(), body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminListUsers(params?: Record<string, string>): Promise<{ items: User[]; total: number }> {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+    const r = await fetch(`${this.baseUrl}/admin/users${qs}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminCreateUser(data: Record<string, unknown>): Promise<{ user: User }> {
+    const r = await fetch(`${this.baseUrl}/admin/users`, {
+      method: 'POST', headers: this.headers(), body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminUpdateUser(userId: string, data: Record<string, unknown>): Promise<{ user: User }> {
+    const r = await fetch(`${this.baseUrl}/admin/users/${userId}`, {
+      method: 'PATCH', headers: this.headers(), body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminGetPolicies(): Promise<{ policies: Record<string, unknown>[] }> {
+    const r = await fetch(`${this.baseUrl}/admin/policies`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminUpdatePolicies(policies: Record<string, string>): Promise<{ policies: Record<string, unknown>[] }> {
+    const r = await fetch(`${this.baseUrl}/admin/policies`, {
+      method: 'PUT', headers: this.headers(), body: JSON.stringify({ policies }),
+    })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminGetStats(): Promise<Record<string, unknown>> {
+    const r = await fetch(`${this.baseUrl}/admin/stats`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminGetAuditLog(limit = 20): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const r = await fetch(`${this.baseUrl}/admin/audit-log?limit=${limit}`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  async adminGetSystemInfo(): Promise<Record<string, unknown>> {
+    const r = await fetch(`${this.baseUrl}/admin/system-info`, { headers: this.headers() })
+    if (!r.ok) throw new Error(await this.parseError(r))
+    return r.json()
+  }
+
+  adminExportUrl(type: 'users' | 'checkins' | 'alerts'): string {
+    return `${this.baseUrl}/admin/export/${type}`
+  }
 }
 
 export const api = new WellbeingApiClient()

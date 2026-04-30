@@ -23,6 +23,7 @@ import ConsentPage from './pages/ConsentPage'
 import DashboardPage from './pages/DashboardPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import SettingsPage from './pages/SettingsPage'
 import UpdatesPage from './pages/UpdatesPage'
 import type { Alert } from './types'
 
@@ -44,6 +45,7 @@ function useHash(): string {
 function routeToTab(route: string): TabId {
   if (route === '/checkin') return 'checkin'
   if (route === '/updates') return 'updates'
+  if (route === '/settings') return 'settings'
   if (route === '/dashboard' || route.startsWith('/alert/') || route === '/composer' || route === '/closures') return 'manage'
   return 'home'
 }
@@ -145,6 +147,8 @@ function Router() {
     )
   } else if (route === '/closures' && canSeeDashboard) {
     screen = <ClosuresPage onBack={() => navigate('#/dashboard')} />
+  } else if (route === '/settings' && user?.role === 'admin') {
+    screen = <SettingsPage />
   } else {
     screen = <HomePage onStartCheckIn={() => navigate('#/checkin')} />
   }
@@ -155,6 +159,7 @@ function Router() {
       case 'checkin': navigate('#/checkin'); break
       case 'updates': navigate('#/updates'); break
       case 'manage': navigate('#/dashboard'); break
+      case 'settings': navigate('#/settings'); break
     }
   }
 
