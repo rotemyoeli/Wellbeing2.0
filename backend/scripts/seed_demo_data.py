@@ -161,17 +161,17 @@ def _energy_for(day_offset: int, user_seed: int) -> int:
 # ─── Reset ──────────────────────────────────────────────────────────────────
 
 def reset_demo_data():
-    """Delete all demo records (safe: only touches demo-prefixed IDs and dept-* departments)."""
+    """Delete ALL demo records: any user_id starting with 'demo-' and dept-* departments."""
     print("Resetting demo data...")
 
+    # Find ALL demo-related check-in IDs (any dept-* department)
     demo_checkin_ids = [
         row[0] for row in
         db.session.query(CheckIn.check_in_id)
-        .filter(CheckIn.department_id.in_(DEPT_IDS))
+        .filter(CheckIn.department_id.like("dept-%"))
         .all()
     ]
     if demo_checkin_ids:
-        # Batch delete in chunks to avoid parameter limits
         for chunk_start in range(0, len(demo_checkin_ids), 500):
             chunk = demo_checkin_ids[chunk_start:chunk_start + 500]
             db.session.query(Alert).filter(
@@ -180,20 +180,20 @@ def reset_demo_data():
         db.session.flush()
 
     db.session.query(CheckIn).filter(
-        CheckIn.department_id.in_(DEPT_IDS)
+        CheckIn.department_id.like("dept-%")
     ).delete(synchronize_session=False)
 
     db.session.query(TeamUpdate).filter(
-        TeamUpdate.department_id.in_(DEPT_IDS)
+        TeamUpdate.department_id.like("dept-%")
     ).delete(synchronize_session=False)
 
-    demo_ids = [u["user_id"] for u in DEMO_USERS]
+    # Delete ALL demo-* users and their consent logs
     db.session.query(ConsentLog).filter(
-        ConsentLog.user_id.in_(demo_ids)
+        ConsentLog.user_id.like("demo-%")
     ).delete(synchronize_session=False)
 
     db.session.query(User).filter(
-        User.user_id.in_(demo_ids)
+        User.user_id.like("demo-%")
     ).delete(synchronize_session=False)
 
     db.session.commit()
