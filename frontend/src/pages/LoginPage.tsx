@@ -6,7 +6,6 @@
  * didn't work with the backend (fake user IDs, no department_id, etc.)
  */
 import { useState } from 'react'
-import WBBrand from '../components/ui/WBBrand'
 import WBButton from '../components/ui/WBButton'
 import WBCard from '../components/ui/WBCard'
 import WBInput from '../components/ui/WBInput'
@@ -77,7 +76,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-app bg-paper flex flex-col px-6 py-8">
-      <WBBrand size="lg" />
+      {/* Mehva logo + product branding */}
+      <div className="flex flex-col items-center pt-4 pb-2">
+        <img src="/mehva-logo.svg" alt="Mehva" className="h-14 w-auto" />
+        <p className="text-h3 font-bold text-ink-900 mt-4 tracking-tight">Wellbeing 2.0</p>
+        <p className="text-caption text-ink-400 mt-0.5">by Mehva</p>
+      </div>
 
       {/* DEMO LOGIN: uses real JWT via /auth/demo-login */}
       <div className="mt-6 rounded-xl border-2 border-dashed border-accent-300 bg-accent-50 p-4">
