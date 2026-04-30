@@ -77,8 +77,14 @@ export default function CheckInPage({ onDone }: Props) {
   if (screen === 'submitting') {
     return (
       <div className="min-h-app bg-paper flex flex-col items-center justify-center px-6">
-        <div className="w-12 h-12 rounded-full border-2 border-accent-300 border-t-accent-700 animate-spin mb-4" />
-        <p className="text-body text-ink-500">{t('b1_submitting')}</p>
+        <div className="relative">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="var(--wb-accent-100)" strokeWidth="4" />
+            <circle cx="40" cy="40" r="34" fill="none" stroke="var(--wb-accent-700)" strokeWidth="4"
+              strokeLinecap="round" strokeDasharray="60 154" className="animate-spin" style={{ animationDuration: '1.2s' }} />
+          </svg>
+        </div>
+        <p className="text-body text-ink-500 mt-4">{t('b1_submitting')}</p>
       </div>
     )
   }
@@ -87,8 +93,8 @@ export default function CheckInPage({ onDone }: Props) {
   if (screen === 'error') {
     return (
       <div className="min-h-app bg-paper flex flex-col items-center justify-center px-6 pb-safe pt-safe">
-        <div className="w-16 h-16 rounded-xl border border-line bg-surface flex items-center justify-center mb-6 shadow-sm">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wb-ink-400)" strokeWidth="1.5" strokeLinecap="round">
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-alert-low-bg to-surface flex items-center justify-center mb-6 shadow-md border border-alert-low-border">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--wb-alert-low-fg)" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
@@ -105,15 +111,22 @@ export default function CheckInPage({ onDone }: Props) {
   // ===== B2 Thanks =====
   if (screen === 'thanks') {
     return (
-      <div className="min-h-app bg-paper flex flex-col items-center justify-center px-6 py-8">
-        <div className="w-16 h-16 rounded-xl bg-teal-500 flex items-center justify-center mb-6">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
+      <div className="min-h-app flex flex-col items-center justify-center px-6 py-8"
+        style={{ background: 'linear-gradient(160deg, var(--wb-paper) 0%, var(--wb-teal-100) 100%)' }}>
+        {/* Animated check circle */}
+        <div className="relative mb-6">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="38" fill="none" stroke="var(--wb-teal-300)" strokeWidth="3" />
+            <circle cx="44" cy="44" r="38" fill="var(--wb-teal-500)" opacity="0.15" />
+            <polyline points="30 44 40 54 58 34" fill="none" stroke="var(--wb-teal-700)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <h1 className="text-h1 font-bold text-ink-900">{t('b2_thanks')}</h1>
         <p className="text-body text-ink-500 mt-3 text-center max-w-[280px]">{t('b2_body')}</p>
-        <p className="text-caption font-mono text-ink-400 mt-4">{submittedAt}</p>
+        <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-pill bg-surface border border-line shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-teal-500" />
+          <p className="text-caption font-mono text-ink-400">{submittedAt}</p>
+        </div>
 
         <div className="flex-1" />
 
