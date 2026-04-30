@@ -158,6 +158,9 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
               </div>
             </div>
 
+            {/* Health score (idea 22) */}
+            <HealthScoreCard summary={summary} />
+
             {/* Needs-talk banner */}
             {(summary.needs_talk_count ?? 0) > 0 && (
               <div className="flex items-center gap-3 rounded-xl border border-teal-300 bg-teal-100/30 px-4 py-3 mb-5">
@@ -482,6 +485,44 @@ function ActivityHeatmap({ trend }: { trend: { date: string; count: number; avg:
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+/** Department health score — composite of energy + participation + response */
+function HealthScoreCard({ summary }: { summary: DashboardSummary }) {
+  // Composite: 40% energy + 30% participation + 30% closure rate
+  const energyScore = (summary.avg_energy ?? 50) / 100
+  const partScore = Math.min(summary.reporting_rate, 1)
+  const closeScore = summary.closure_publish_rate ?? 0.5
+  const composite = Math.round((energyScore * 40 + partScore * 30 + closeScore * 30))
+
+  const { label, color, gradient } =
+    composite >= 75 ? { label: t('health_excellent'), color: 'var(--wb-teal-500)', gradient: 'from-teal-100 to-surface' }
+    : composite >= 55 ? { label: t('health_good'), color: 'var(--wb-teal-700)', gradient: 'from-teal-100/50 to-surface' }
+    : composite >= 35 ? { label: t('health_attention'), color: 'var(--wb-accent-700)', gradient: 'from-accent-50 to-surface' }
+    : { label: t('health_critical'), color: 'var(--wb-alert-low-fg)', gradient: 'from-alert-low-bg to-surface' }
+
+  const r = 28
+  const circ = 2 * Math.PI * r
+  const filled = circ * (composite / 100)
+
+  return (
+    <div className={`rounded-xl bg-gradient-to-br ${gradient} border border-line p-4 mb-5 flex items-center gap-4`}>
+      <svg width="68" height="68" viewBox="0 0 68 68" className="shrink-0">
+        <circle cx="34" cy="34" r={r} fill="none" stroke="var(--wb-line)" strokeWidth="5" />
+        <circle cx="34" cy="34" r={r} fill="none" stroke={color} strokeWidth="5"
+          strokeLinecap="round" strokeDasharray={`${filled} ${circ}`}
+          transform="rotate(-90 34 34)" className="transition-all duration-700" />
+        <text x="34" y="37" textAnchor="middle" fill="var(--wb-ink-900)" style={{ fontSize: 16, fontWeight: 700 }}>{composite}</text>
+      </svg>
+      <div>
+        <p className="text-caption font-semibold text-ink-900">{t('health_score')}</p>
+        <p className="text-micro font-medium" style={{ color }}>{label}</p>
+        <p className="text-[9px] text-ink-400 mt-0.5">
+          {t('c1_kpiAvgEnergy')} {summary.avg_energy ?? '—'}% · {t('c1_participation')} {Math.round(summary.reporting_rate * 100)}%
+        </p>
       </div>
     </div>
   )

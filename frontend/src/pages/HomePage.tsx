@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from 'react'
 import WBButton from '../components/ui/WBButton'
+import WBDarkModeToggle from '../components/ui/WBDarkModeToggle'
 import WBInstallPrompt from '../components/ui/WBInstallPrompt'
 import WBPage from '../components/ui/WBPage'
 import WBReactionBar from '../components/ui/WBReactionBar'
@@ -68,6 +69,7 @@ export default function HomePage({ onStartCheckIn }: Props) {
       <WBTopBar
         trailing={
           <div className="flex items-center gap-2">
+            <WBDarkModeToggle />
             <span className="text-caption text-ink-500">{user?.display_name}</span>
             <button type="button" onClick={logout} className="text-micro text-ink-400 underline no-tap-highlight">
               {t('signOut')}
