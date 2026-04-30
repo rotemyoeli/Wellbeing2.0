@@ -161,6 +161,25 @@ export default function HomePage({ onStartCheckIn }: Props) {
           />
         </div>
 
+        {/* Personal history (idea 6) — compact energy timeline */}
+        {myCheckins.length > 2 && (
+          <div className="rounded-xl border border-line bg-surface p-4 mb-4">
+            <p className="text-micro text-ink-500 font-semibold uppercase tracking-widest mb-2">{t('history_title')}</p>
+            <div className="flex items-end gap-[3px]" style={{ height: 40 }}>
+              {myCheckins.slice(0, 14).reverse().map((ci, i) => (
+                <div key={i} className="flex-1 rounded-t-sm transition-all" style={{
+                  height: 6 + (ci.energy / 100) * 34,
+                  backgroundColor: energyColor(ci.energy),
+                }} />
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[8px] text-ink-400">{myCheckins.length > 1 ? new Date(myCheckins[myCheckins.length-1].created_at).toLocaleDateString() : ''}</span>
+              <span className="text-[8px] text-ink-400">{t('home_lastReport')}</span>
+            </div>
+          </div>
+        )}
+
         {/* Trust chip — tappable to open transparency sheet */}
         <button type="button" onClick={() => setShowTransparency(true)} className="w-full text-start no-tap-highlight">
           <WBTrustHint text={t('home_trustHint')} />
