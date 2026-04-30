@@ -83,11 +83,25 @@ def test_demo_login_rejects_unknown_user(seeded_app):
 
 
 def test_demo_login_disabled_when_dev_mode_off(app):
-    """Demo login returns 403 when DEV_MODE is off."""
+    """Demo login returns 403 when both DEV_MODE and DEMO_MODE are off."""
     client = app.test_client()
     response = client.post("/api/v1/auth/demo-login",
         json={"userId": "demo-superadmin"})
     assert response.status_code == 403
+
+
+def test_demo_login_works_with_demo_mode(seeded_app):
+    """Demo login works when DEMO_MODE is enabled (even without full DEV_MODE)."""
+    # Override: disable DEV_MODE but enable DEMO_MODE
+    seeded_app.config["DEV_MODE_ENABLED"] = False
+    seeded_app.config["DEMO_MODE_ENABLED"] = True
+    client = seeded_app.test_client()
+    response = client.post("/api/v1/auth/demo-login",
+        json={"userId": "demo-superadmin"})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert "accessToken" in body
+    assert body["user"]["user_id"] == "demo-superadmin"
 
 
 def test_demo_login_jwt_works_for_api_calls(seeded_app):

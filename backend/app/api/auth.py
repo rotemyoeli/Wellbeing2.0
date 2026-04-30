@@ -169,7 +169,11 @@ def demo_login():
        or { "email": "superadmin@demo.local" }
     Returns: 200 { accessToken, refreshToken, user }
     """
-    if not current_app.config.get("DEV_MODE_ENABLED"):
+    demo_allowed = (
+        current_app.config.get("DEV_MODE_ENABLED")
+        or current_app.config.get("DEMO_MODE_ENABLED")
+    )
+    if not demo_allowed:
         return jsonify(
             {"error": {"code": "FORBIDDEN", "message": "Demo login is disabled"}}
         ), 403

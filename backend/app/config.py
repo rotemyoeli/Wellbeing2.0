@@ -82,6 +82,11 @@ class BaseConfig:
     # Search for "DEV MODE BACKDOOR" across the codebase to find every site.
     DEV_MODE_ENABLED: bool = _env_bool("WELLBEING_DEV_MODE", False)
 
+    # ---- DEMO MODE -----------------------------------------------------------
+    # Lighter than DEV_MODE: enables /auth/demo-login but does NOT bypass auth
+    # on all endpoints. Safe for Railway demo deployments with FLASK_ENV=production.
+    DEMO_MODE_ENABLED: bool = _env_bool("WELLBEING_DEMO_MODE", False)
+
     # Defaults for dev/test (overridden by subclasses)
     DEBUG: bool = False
     TESTING: bool = False
