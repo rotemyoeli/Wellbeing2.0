@@ -18,7 +18,7 @@ import { showToast } from '../components/ui/WBToast'
 import { api } from '../lib/api'
 import { t } from '../lib/i18n'
 
-type Screen = 'checkin' | 'followup' | 'comment' | 'submitting' | 'quiet' | 'thanks' | 'error'
+type Screen = 'checkin' | 'followup' | 'comment' | 'submitting' | 'thanks' | 'error'
 type ShiftType = 'morning' | 'evening' | 'night' | null
 type CheckInVariant = 'battery' | 'orb' | 'faces'
 
@@ -35,7 +35,7 @@ interface Props {
 export default function CheckInPage({ onDone }: Props) {
   const [screen, setScreen] = useState<Screen>('checkin')
   const [energy, setEnergy] = useState(50)
-  const [anon, setAnon] = useState(true)
+  const [anon, setAnon] = useState(false)
   const [submittedAt, setSubmittedAt] = useState('')
   const [variant, setVariant] = useState<CheckInVariant>(getSavedVariant)
   const [errorMsg, setErrorMsg] = useState('')
@@ -71,9 +71,7 @@ export default function CheckInPage({ onDone }: Props) {
         needsTalk: needsTalk || undefined,
       })
       setSubmittedAt(new Date().toLocaleTimeString())
-      // Show quiet moment for 5 seconds, then thanks
-      setScreen('quiet')
-      setTimeout(() => setScreen('thanks'), 5000)
+      setScreen('thanks')
     } catch {
       setErrorMsg(t('b1_errNet'))
       setScreen('error')
@@ -114,29 +112,6 @@ export default function CheckInPage({ onDone }: Props) {
           <WBButton kind="primary" onClick={handleSubmit}>{t('f1_retry')}</WBButton>
           <WBButton kind="secondary" onClick={onDone}>{t('f3_home')}</WBButton>
         </div>
-      </div>
-    )
-  }
-
-  // ===== Quiet moment (idea 4) =====
-  if (screen === 'quiet') {
-    const elapsed = ((Date.now() - submitStartTime) / 1000).toFixed(1)
-    return (
-      <div className="min-h-app flex flex-col items-center justify-center px-6"
-        style={{ background: 'linear-gradient(160deg, var(--wb-paper) 0%, var(--wb-accent-50) 100%)' }}>
-        {/* Breathing circle */}
-        <div className="w-32 h-32 rounded-full border-2 border-accent-300/40 flex items-center justify-center"
-          style={{ animation: 'breathe 4s ease-in-out infinite' }}>
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent-300/30 to-teal-300/20" />
-        </div>
-        <p className="text-body text-ink-500 mt-6 text-center">{t('quiet_breathe')}</p>
-        <p className="text-micro text-ink-400 mt-2">
-          {t('privacy_counter', { n: elapsed })}
-        </p>
-        <button type="button" onClick={() => setScreen('thanks')}
-          className="text-caption text-accent-700 mt-8 py-2 no-tap-highlight">
-          {t('quiet_skip')}
-        </button>
       </div>
     )
   }
