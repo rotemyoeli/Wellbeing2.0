@@ -140,11 +140,11 @@ export default function DashboardPage({ onOpenAlert, onOpenComposer, onOpenClosu
                 SECTION 1: VISUAL HERO — Energy Gauge + Rings
             ═══════════════════════════════════════════════ */}
             <div className="rounded-2xl bg-gradient-to-br from-accent-900 via-accent-700 to-accent-500 p-5 mb-5 shadow-lg">
-              <div className="flex items-center gap-5">
+              <div className="flex flex-col items-center gap-4">
                 {/* Large energy gauge */}
                 <EnergyGauge value={summary.avg_energy} median={summary.median_energy} prevAvg={summary.prev_avg_energy} />
                 {/* Mini ring KPIs */}
-                <div className="flex-1 grid grid-cols-2 gap-3">
+                <div className="w-full grid grid-cols-2 gap-3">
                   <MiniRing
                     value={Math.round(summary.reporting_rate * 100)}
                     label={t('c1_participation')}
@@ -422,7 +422,7 @@ function MiniRing({ value, max = 100, label, sub, color, invert }: {
         </text>
       </svg>
       <div className="min-w-0">
-        <p className="text-[10px] text-white/70 leading-tight truncate">{label}</p>
+        <p className="text-[11px] text-white/70 leading-tight">{label}</p>
         {sub && <p className="text-[10px] text-white/40 leading-tight">{sub}</p>}
       </div>
     </div>
